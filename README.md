@@ -1,2 +1,2 @@
 # happygram
-https://bit.ly/31LRvQu
+api 명세 https://bit.ly/31LRvQu
