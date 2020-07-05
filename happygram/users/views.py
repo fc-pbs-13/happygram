@@ -22,6 +22,8 @@ class UserViewSet(ModelViewSet):
                                                context={'request': request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
+        if user is None:
+            return Response({'failed login': "로그인 실패"}, status=status.HTTP_400_BAD_REQUEST)
         token, created = Token.objects.get_or_create(user=user)
         return Response({'token': token.key}, status=status.HTTP_201_CREATED)
 
@@ -32,13 +34,6 @@ class UserViewSet(ModelViewSet):
 
 
 class CustomAuthTokenSerializer(serializers.Serializer):
-    # def create(self, validated_data):
-    #     pass
-    #
-    # def update(self, instance, validated_data):
-    #     pass
-    #
-
     email = serializers.CharField(label=_("email"))
     password = serializers.CharField(
         label=_("Password"),
