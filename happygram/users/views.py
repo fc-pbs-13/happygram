@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from django.contrib.auth import authenticate
 from users.models import User
-from users.serializer import UserSerializer
+from users.serializers import UserSerializer
 from django.utils.translation import gettext_lazy as _
 
 

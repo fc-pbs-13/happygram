@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'users',
+    'profiles',
 
 ]
 
@@ -128,3 +129,7 @@ STATIC_URL = '/static/'
 
 
 AUTH_USER_MODEL = 'users.User'
+
+print(BASE_DIR)
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'images')
