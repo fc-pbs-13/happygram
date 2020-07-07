@@ -1,4 +1,3 @@
-
 from users.models import User
 from django.test import TestCase
 from munch import Munch
@@ -9,7 +8,8 @@ from rest_framework.test import APITestCase
 
 class UserTestCase(APITestCase):
     def setUp(self) -> None:
-        self.data = {"email": "test@test.com", "password": "1111"}
+        self.password = "1111"
+        self.data = {"email": "test@test.com", "password": self.password}
         self.test_user = User.objects.create(**self.data)
         self.test_user.set_password(raw_password="1111")
         self.test_user.save()
@@ -22,7 +22,6 @@ class UserTestCase(APITestCase):
         self.client.force_authenticate(user=self.test_user)
         response = self.client.get(f'/api/users/{self.test_user.id}')
 
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         user_response = Munch(response.data)
@@ -33,7 +32,7 @@ class UserTestCase(APITestCase):
         """
         Request : POST - /api/user/
         """
-        data = {"email": "new@new.com", "password": "1111"}
+        data = {"email": "new@new.com", "password": self.password}
         response = self.client.post('/api/users', data=data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -47,7 +46,6 @@ class UserTestCase(APITestCase):
         Request : DELETE - /api/user/{user_id}
         """
         self.client.force_authenticate(user=self.test_user)
-        # entry = User.objects.get(id=self.test_user.id)
         response = self.client.delete(f'/api/users/{self.test_user.id}')
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -81,7 +79,7 @@ class UserTestCase(APITestCase):
         """
         Request : POST - /api/user/login
         """
-        self.fail_data = {"email": "test@test.com", "password": "0000"}
+        self.fail_data = {"email": "test@test.com", "password": self.password + "0"}
 
         response = self.client.post('/api/users/login', data=self.fail_data)
 
@@ -97,8 +95,7 @@ class UserTestCase(APITestCase):
         token = response.data['token']
 
         self.client.force_authenticate(user=self.test_user, token=token)
-        response = self.client.delete('/api/users/logout', HTTP_AUTHORIZATION='Token ' + token)
+        response = self.client.delete('/api/users/logout')
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Token.objects.filter(pk=token).exists())
-
