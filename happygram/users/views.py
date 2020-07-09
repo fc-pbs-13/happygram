@@ -6,10 +6,8 @@ from rest_framework.decorators import action
 from rest_framework.fields import EmailField
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from django.contrib.auth import authenticate
 from users.models import User
-from users.serializers import UserSerializer
-from django.utils.translation import gettext_lazy as _
+from users.serializers import UserSerializer, CustomAuthTokenSerializer, UpdatePasswordSerializer
 
 
 class UserViewSet(ModelViewSet):
@@ -30,28 +28,12 @@ class UserViewSet(ModelViewSet):
         request.user.auth_token.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @action(methods=['patch'], detail=False)
+    def updatepassword(self, request, *args, **kwargs):
+        """request token user의 password를 바꾼다 """
+        instance = self.request.user
+        serializer = UpdatePasswordSerializer(instance, data=request.data, partial=True, context={'request': request}, )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-class CustomAuthTokenSerializer(serializers.Serializer):
-    email = serializers.CharField(label=_("email"))
-    password = serializers.CharField(
-        label=_("Password"),
-        style={'input_type': 'password'},
-        trim_whitespace=False
-    )
-
-    def validate(self, attrs):
-        email = attrs.get('email')
-        password = attrs.get('password')
-
-        if email and password:
-            user = authenticate(request=self.context.get('request'),
-                                email=email, password=password)
-            if user is None:
-                msg = _('Unable to log in with provided credentials.')
-                raise serializers.ValidationError(msg, code='authorization')
-        else:
-            msg = _('Must include "email" and "password".')
-            raise serializers.ValidationError(msg, code='authorization')
-
-        attrs['user'] = user
-        return attrs
+        return Response(status=status.HTTP_200_OK)
