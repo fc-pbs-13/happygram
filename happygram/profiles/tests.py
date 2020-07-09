@@ -1,4 +1,6 @@
 from model_bakery import baker
+from munch import Munch
+from rest_framework import status
 from rest_framework.test import APITestCase
 
 from profiles.models import Profile
@@ -6,69 +8,41 @@ from profiles.models import Profile
 
 class ProfileTestCase(APITestCase):
     def setUp(self) -> None:
-        self.user = baker.make('users.User', _quantity=3)
+        self.users = baker.make('users.User', _quantity=3)
         self.profiles = []
 
-        for user in self.user:
+        for user in self.users:
             self.profiles += baker.make('profiles.Profile', _quantity=3, introduce='hi django', user=user)
 
-        self.user = self.user[0]
-        # self.profiles = Profile.objects.filter(user=self.user.id).first()
+        self.user = self.users[0]
+        self.profile = Profile.objects.filter(user=self.user.id).first()
 
-    def test_profile_create(self):
-        """"포스트 생성"""
+    def test_profile_detail(self):
+        """"프로 디테일"""
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(f'/api/profiles/{self.profile.id}')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        profile_response = Munch(response.data)
+
+        self.assertTrue(profile_response.id)
+        self.assertEqual(profile_response.user, self.user.id)
+        self.assertEqual(profile_response.introduce, self.profile.introduce)
+
+    def test_profile_update(self):
+        """프로필 업데이트"""
+        prev_introduce = self.profile.introduce
         data = {
-            'post_title': 'asdasdad',
-            'post_contents': 'sdsadas',
+            'introduce': 'hi python'
         }
 
         self.client.force_authenticate(user=self.user)
-        response = self.client.post('/api/blogs/', data=data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        blog_response = Munch(response.data)
-        self.assertTrue(blog_response.id)
-        self.assertEqual(blog_response.post_contents, data['post_contents'])
-        self.assertEqual(blog_response.post_owner, self.user.id)
 
-    def test_post_list(self):
-        """"포스트 리스트"""
-        self.client.force_authenticate(user=self.user)
-        response = self.client.get('/api/blogs/')
+        response = self.client.patch(f'/api/profiles/{self.profile.id}', data=data)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for blog_response, blog in zip(response.data['results'], self.blogs[::-1]):
-            self.assertEqual(blog_response['post_contents'], blog.post_contents)
-            self.assertEqual(blog_response['post_owner'], blog.post_owner_id)
 
-    def test_post_detail(self):
-        """"포스트 디테일"""
-        self.client.force_authenticate(user=self.user)
-        response = self.client.get(f'/api/blogs/{self.blog.id}')
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        blog_response = Munch(response.data)
-        self.assertTrue(blog_response.id)
-        self.assertEqual(blog_response.post_contents, self.blog.post_contents)
-
-    def test_post_update(self):
-        """포스트 업데이"""
-        prev_content = self.blog.post_contents
-        data = {
-            'post_title': 'abc',
-            'post_contents': 'hello world'
-        }
-
-        self.client.force_authenticate(user=self.user)
-        response = self.client.patch(f'/api/blogs/{self.blog.id}', data=data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        blog_response = Munch(response.data)
-        self.assertEqual(blog_response.post_contents, data['post_contents'])
-        self.assertNotEqual(blog_response.post_contents, prev_content)
-
-    def test_post_delete(self):
-        """포스트 삭제 """
-        self.client.force_authenticate(user=self.user)
-        response = self.client.delete(f'/api/blogs/{self.blog.id}')
-
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Blog.objects.filter(pk=self.blog.id).count(), 0)
+        profile_response = Munch(response.data)
+        self.assertEqual(profile_response.introduce, data['introduce'])
+        self.assertNotEqual(profile_response.introduce, prev_introduce)

@@ -1,3 +1,4 @@
+from profiles.models import Profile
 from users.models import User
 from django.test import TestCase
 from munch import Munch
@@ -38,6 +39,8 @@ class UserTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         user_response = Munch(response.data)
+        #  프로필 데이터 생기는지 체크
+        self.assertTrue(Profile.objects.filter(user_id=user_response.id))
         self.assertTrue(user_response.id)
         self.assertEqual(user_response.email, data['email'])
 
