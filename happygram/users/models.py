@@ -3,6 +3,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
+from profiles.models import Profile
+
 
 class UserManager(BaseUserManager):
     """Define a model manager for User model with no username field."""
@@ -48,3 +50,9 @@ class User(AbstractUser):
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        user_is = Profile.objects.filter(user_id=self.id).exists()
+        if not user_is:
+            Profile.objects.create(user_id=self.id)
