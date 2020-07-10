@@ -22,6 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UpdatePasswordSerializer(serializers.ModelSerializer):
+    """update user password """
     class Meta:
         model = User
         fields = ('password',)

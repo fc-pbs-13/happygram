@@ -32,11 +32,9 @@ class PostTestCase(APITestCase):
         # 데이터 만들기
         self.users = baker.make('users.User', _quantity=3)
         self.posts = []
-        #  아쉬 그럼 리스트로 어케해 이미 저기 하나 만들어 놓구 여기서는 세개 만들어놨는뎅..
         for user in self.users:
             self.posts += baker.make('posts.Post', _quantity=3, caption='hello bye', user=user)
         self.user = self.users[0]
-
         #
 
         self.client.force_authenticate(user=self.user)
