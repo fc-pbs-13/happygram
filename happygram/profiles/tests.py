@@ -12,6 +12,19 @@ class ProfileTestCase(APITestCase):
         # user create -> profile create
         self.profile = Profile.objects.get(user_id=self.user.id)
 
+    def temporary_image(self):
+        """
+        Returns a new temporary image file
+        """
+        import tempfile
+        from PIL import Image
+
+        image = Image.new('RGB', (10, 10))
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        image.save(tmp_file, 'jpeg')
+        tmp_file.seek(0)  # important because after save(), the fp is already at the end of the file
+        return tmp_file
+
     def test_profile_detail(self):
         """"프로필 디테일"""
         self.client.force_authenticate(user=self.user)
@@ -25,19 +38,17 @@ class ProfileTestCase(APITestCase):
         self.assertEqual(profile_response.introduce, self.profile.introduce)
 
     def test_profile_update(self):
-        """프로필 업데이트"""
+        """프로필 이미지도 업데이트"""
         prev_introduce = self.profile.introduce
         data = {
-            'introduce': 'hi python'
+            'introduce': 'hi python',
+            'image': self.temporary_image()
         }
+        response = self.client.patch(f'/api/profiles/{self.profile.id}', data=data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         self.client.force_authenticate(user=self.user)
-
-        response = self.client.patch(f'/api/profiles/{self.profile.id}', data=data)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         profile_response = Munch(response.data)
         self.assertEqual(profile_response.introduce, data['introduce'])
         self.assertNotEqual(profile_response.introduce, prev_introduce)
-
