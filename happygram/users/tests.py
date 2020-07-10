@@ -12,7 +12,7 @@ class UserTestCase(APITestCase):
         self.password = "1111"
         self.data = {"email": "test@test.com", "password": self.password}
         self.test_user = User.objects.create(**self.data)
-        self.test_user.set_password(raw_password="1111")
+        self.test_user.set_password(raw_password=self.password)
         self.test_user.save()
 
     def test_should_detail_user(self):
@@ -39,7 +39,7 @@ class UserTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         user_response = Munch(response.data)
-        #  프로필 데이터 생기는지 체크
+        #  create profile object
         self.assertTrue(Profile.objects.filter(user_id=user_response.id))
         self.assertTrue(user_response.id)
         self.assertEqual(user_response.email, data['email'])
@@ -54,7 +54,7 @@ class UserTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(User.objects.filter(id=self.test_user.id).exists())
 
-    def test_should_update_user(self):
+    def test_should_update_password(self):
         """
         Request : PATCH - /api/user/{user_id}
         """
@@ -102,3 +102,19 @@ class UserTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Token.objects.filter(pk=token).exists())
+
+    def test_update_password(self):
+        update_pwd = {"password": "2222"}
+
+        token=Token.objects.create(user=self.test_user)
+        self.client.force_authenticate(user=self.test_user, token=token.key)
+
+        response = self.client.patch('/api/users/update_password', data=update_pwd)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        update_login = {"email": "test@test.com", "password": update_pwd['password']}
+        response2 = self.client.post('/api/users/login', data= update_login)
+        print(response2)
+        self.assertTrue(response2.data['token'])
+

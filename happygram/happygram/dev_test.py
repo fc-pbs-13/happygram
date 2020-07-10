@@ -4,8 +4,6 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]
 
-print(INSTALLED_APPS)
-
 # base
 # dev
 # dev_test

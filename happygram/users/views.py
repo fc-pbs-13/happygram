@@ -29,10 +29,10 @@ class UserViewSet(ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(methods=['patch'], detail=False)
-    def updatepassword(self, request, *args, **kwargs):
+    def update_password(self, request, *args, **kwargs):
         """request token user의 password를 바꾼다 """
         instance = self.request.user
-        serializer = UpdatePasswordSerializer(instance, data=request.data, partial=True, context={'request': request}, )
+        serializer = UpdatePasswordSerializer(instance, data=request.data, context={'request': request}, )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
