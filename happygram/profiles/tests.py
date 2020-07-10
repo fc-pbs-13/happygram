@@ -47,5 +47,3 @@ class ProfileTestCase(APITestCase):
         self.assertEqual(profile_response.introduce, data['introduce'])
         self.assertNotEqual(profile_response.introduce, prev_introduce)
 
-    def test(self):
-        self.fail()

@@ -1,6 +1,3 @@
-from django.test import TestCase
-
-from django.test import TestCase
 from model_bakery import baker
 from munch import Munch
 from rest_framework import status
