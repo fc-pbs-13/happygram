@@ -18,7 +18,7 @@ class ProfileTestCase(APITestCase):
         self.profile = Profile.objects.filter(user=self.user.id).first()
 
     def test_profile_detail(self):
-        """"프로 디테일"""
+        """"프로필 디테일"""
         self.client.force_authenticate(user=self.user)
         response = self.client.get(f'/api/profiles/{self.profile.id}')
 
@@ -46,3 +46,6 @@ class ProfileTestCase(APITestCase):
         profile_response = Munch(response.data)
         self.assertEqual(profile_response.introduce, data['introduce'])
         self.assertNotEqual(profile_response.introduce, prev_introduce)
+
+    def test(self):
+        self.fail()

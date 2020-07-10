@@ -4,8 +4,9 @@ from posts.models import Post
 
 
 class PostSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(source='user.email')
+    email = serializers.EmailField(source='user.email', read_only=True)
 
     class Meta:
         model = Post
-        fields = ('images', 'user', 'caption', 'date', 'id', 'email')
+        fields = ('images', 'caption', 'date', 'id', 'email')
+
