@@ -22,18 +22,13 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UpdatePasswordSerializer(serializers.ModelSerializer):
+    """update user password """
     class Meta:
         model = User
         fields = ('password',)
 
     def update(self, instance, validated_data):
-        """ PUT: 유저 비밀버호 수정 """
-        # password랑 나머지 데이터 수정 분
-        for attr, value in validated_data.items():
-            if attr == 'password':
-                instance.set_password(value)
-            else:
-                setattr(instance, attr, value)
+        instance.set_password(validated_data['password'])
         instance.save()
         return instance
 

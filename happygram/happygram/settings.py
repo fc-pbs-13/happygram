@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'users',
     'profiles',
     'posts',
+    'mptt',
 
 ]
 
@@ -141,3 +142,7 @@ REST_FRAMEWORK = {
     ],
 
 }
+
+# 들여쓰기 조정
+
+DEFAULT_LEVEL_INDICATOR = 2
