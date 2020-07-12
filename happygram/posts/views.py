@@ -10,7 +10,7 @@ class PostViewSet(ModelViewSet):
     serializer_class = PostSerializer
 
     def perform_create(self, serializer):
-        l = []
-        l.append(self.request.FILES['images'])
-        serializer.save(user=self.request.user, images=l)
+        serializer.save(user=self.request.user)
+
+
 

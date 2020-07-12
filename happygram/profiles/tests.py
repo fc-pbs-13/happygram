@@ -14,7 +14,7 @@ class ProfileTestCase(APITestCase):
 
     def temporary_image(self):
         """
-        Returns a new temporary image file
+        임시 이미지 파일
         """
         import tempfile
         from PIL import Image
@@ -22,7 +22,7 @@ class ProfileTestCase(APITestCase):
         image = Image.new('RGB', (10, 10))
         tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
         image.save(tmp_file, 'jpeg')
-        tmp_file.seek(0)  # important because after save(), the fp is already at the end of the file
+        tmp_file.seek(0)
         return tmp_file
 
     def test_profile_detail(self):

@@ -11,15 +11,31 @@ class PostTestCase(APITestCase):
     def setUp(self) -> None:
         self.user = User.objects.create(email="abc@abc.com", password="1234")
 
+    def temporary_image(self):
+        """
+        임시 이미지 파일
+        """
+        import tempfile
+        from PIL import Image
+
+        image = Image.new('RGB', (10, 10))
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        image.save(tmp_file, 'jpeg')
+        tmp_file.seek(0)
+        return tmp_file
+
     def test_post_create(self):
         """"포스트 생성"""
         data = {
             'caption': 'hi~~~~~~!!!!',
+            'image': self.temporary_image(),
+            'image': self.temporary_image()
+
         }
 
         self.client.force_authenticate(user=self.user)
 
-        response = self.client.post('/api/posts', data=data)
+        response = self.client.post('/api/posts', data=data, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -88,5 +104,3 @@ class PostTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Post.objects.filter(pk=self.post.id).count(), 0)
-
-
