@@ -29,8 +29,6 @@ class PostSerializer(serializers.ModelSerializer):
 
         for image in images.getlist('image'):
             Photo.objects.create(post=post, image=image)
-
-
         return post
 
     def save(self, **kwargs):
