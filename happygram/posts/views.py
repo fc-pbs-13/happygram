@@ -23,5 +23,13 @@ class CommentNestedViewSet(mixins.CreateModelMixin, GenericViewSet):
     def perform_create(self, serializer):
         serializer.save(
             user=self.request.user,
-            post_id=self.kwargs['post_pk'],
+            post_id=int(self.kwargs['post_pk']),
         )
+
+
+class CommentViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, GenericViewSet):
+    queryset = Post.objects.all()
+    serializer_class = CommentSerializer
+
+    def perform_update(self, serializer):
+        serializer.save(user=self.request.user)
