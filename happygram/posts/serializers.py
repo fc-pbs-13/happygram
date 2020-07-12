@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from posts.models import Post, Photo
+from posts.models import Post, Photo, Comment
 
 
 class PhotoSerializer(serializers.ModelSerializer):
@@ -8,13 +8,20 @@ class PhotoSerializer(serializers.ModelSerializer):
         fields = ('id', 'post_id', 'image')
 
 
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ('id', 'post_id', 'parent', 'user_id', 'contents')
+
+
 class PostSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
     img = PhotoSerializer(many=True, read_only=True)
+    comments = CommentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Post
-        fields = ('id', 'email', 'img', 'caption', 'created', 'modified')
+        fields = ('id', 'email', 'img', 'caption', 'created', 'modified', 'comments')
 
     def create(self, validated_data):
         images = self.context['request'].FILES
@@ -22,6 +29,8 @@ class PostSerializer(serializers.ModelSerializer):
 
         for image in images.getlist('image'):
             Photo.objects.create(post=post, image=image)
+
+
         return post
 
     def save(self, **kwargs):
