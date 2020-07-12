@@ -2,7 +2,6 @@ from model_bakery import baker
 from munch import Munch
 from rest_framework import status
 from rest_framework.test import APITestCase
-
 from posts.models import Post, Comment
 from users.models import User
 
