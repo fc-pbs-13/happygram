@@ -11,7 +11,6 @@ class Post(TimeStampedModel):
     # images = ArrayField(models.ImageField(upload_to='post_images'), null=True,
     #                     blank=True)  # null False 인데 테스트코드 작성으로 일단 true다->>>> 일단 photo모델로 만들었
     caption = models.CharField(max_length=200, blank=True)
-    # like = models.ForeignKey()
     # colletions = momdels.ForeignKey()
 
 
@@ -25,3 +24,11 @@ class Comment(MPTTModel):
     user = models.ForeignKey('users.User', on_delete=models.CASCADE)
     contents = models.CharField(max_length=200)
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+
+
+class Like(models.Model):
+    post = models.ForeignKey('posts.Post', related_name='post_like', on_delete=models.CASCADE)
+    user = models.ForeignKey('users.User', related_name='user_like', on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ['post', 'user']

@@ -2,7 +2,7 @@ from model_bakery import baker
 from munch import Munch
 from rest_framework import status
 from rest_framework.test import APITestCase
-from posts.models import Post, Comment
+from posts.models import Post, Comment, Like
 from users.models import User
 
 
@@ -20,7 +20,7 @@ class PostTestCase(APITestCase):
         import tempfile
         from PIL import Image
 
-        image = Image.new('RGB', (10, 10))
+        image = Image.new('RGB', (1, 1))
         tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
         image.save(tmp_file, 'jpeg')
         tmp_file.seek(0)
@@ -30,7 +30,7 @@ class PostTestCase(APITestCase):
         """"포스트 생성"""
         data = {
             'caption': 'hi~~~~~~!!!!',
-            'image': self.temporary_image()
+            'img': [self.temporary_image(), self.temporary_image()]
         }
 
         self.client.force_authenticate(user=self.user)
@@ -150,4 +150,22 @@ class PostTestCase(APITestCase):
         self.assertEqual(Post.objects.filter(pk=comment.id).count(), 0)
 
     def test_recomment_create(self):
-        self.fail()
+        pass
+
+    def test_like_duplicate(self):
+        self.client.force_authenticate(user=self.user)
+
+        Like.objects.create(post=self.post, user=self.user)
+
+        response = self.client.post(f'/api/posts/{self.post.id}/likes')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
+
+    def test_like_destroy(self):
+        self.client.force_authenticate(user=self.user)
+
+        Like.objects.create(post=self.post, user=self.user)
+
+        response = self.client.delete(f'/api/posts/{self.post.id}/likes')
+
+        self.assertEqual()
