@@ -19,7 +19,6 @@ class PostTestCase(APITestCase):
         """
         import tempfile
         from PIL import Image
-
         image = Image.new('RGB', (1, 1))
         tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
         image.save(tmp_file, 'jpeg')
@@ -28,9 +27,10 @@ class PostTestCase(APITestCase):
 
     def test_post_create(self):
         """"포스트 생성"""
+        image_test = [self.temporary_image(), self.temporary_image()]
         data = {
             'caption': 'hi~~~~~~!!!!',
-            'img': [self.temporary_image(), self.temporary_image()]
+            'img': image_test
         }
 
         self.client.force_authenticate(user=self.user)
@@ -41,19 +41,19 @@ class PostTestCase(APITestCase):
 
         post_response = Munch(response.data)
         self.assertTrue(post_response.id)
+        self.assertEqual(len(post_response._img), len(image_test))
         self.assertEqual(post_response.caption, data['caption'])
 
     def test_post_list(self):
         """"포스트 리스트"""
         # 데이터 만들기
-        self.users = baker.make('users.User', _quantity=3)
+        self.users = baker.make('users.User', _quantity=2)
 
         for user in self.users:
-            self.posts += baker.make('posts.Post', _quantity=3, caption='hello bye', user=user)
-        self.user = self.users[0]
-        #
+            self.posts += baker.make('posts.Post', _quantity=len(self.users), caption='hello bye', user=user)
 
         self.client.force_authenticate(user=self.user)
+
         response = self.client.get('/api/posts')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -89,7 +89,6 @@ class PostTestCase(APITestCase):
         response = self.client.patch(f'/api/posts/{self.post.id}', data=data)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         post_response = Munch(response.data)
         self.assertEqual(post_response.caption, data['caption'])
         self.assertNotEqual(post_response.caption, prev_caption)
@@ -152,6 +151,12 @@ class PostTestCase(APITestCase):
     def test_recomment_create(self):
         pass
 
+
+class CommentTestCase(APITestCase):
+    def setUp(self) -> None:
+        self.user = User.objects.create(email="abc@abc.com", password="1234")
+        self.post = Post.objects.create(caption="good bye.. ", user_id=self.user.id)
+
     def test_like_duplicate(self):
         self.client.force_authenticate(user=self.user)
 
@@ -164,8 +169,10 @@ class PostTestCase(APITestCase):
     def test_like_destroy(self):
         self.client.force_authenticate(user=self.user)
 
-        Like.objects.create(post=self.post, user=self.user)
+        response_create = self.client.post(f'/api/posts/{self.post.id}/likes')
 
-        response = self.client.delete(f'/api/posts/{self.post.id}/likes')
+        response = self.client.delete(f"/api/likes/{response_create.data['id']}")
 
-        self.assertEqual()
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        self.assertEqual(Post.objects.get(pk=self.post.id).like_count, 0)

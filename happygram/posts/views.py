@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import mixins
 from rest_framework.generics import get_object_or_404
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
-
+from django.db.models import F
 from posts.models import Post, Comment, Like
 from posts.serializers import PostSerializer, CommentSerializer, LikeSerializer
 
@@ -15,44 +15,35 @@ class PostViewSet(ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class CommentNestedViewSet(mixins.CreateModelMixin, GenericViewSet):
-    serializer_class = CommentSerializer
-
-    def get_queryset(self):
-        return Comment.objects.filter(post_id=self.kwargs['post_id'])
-
-    def perform_create(self, serializer):
-        serializer.save(
-            user=self.request.user,
-            post_id=int(self.kwargs['post_pk']),
-        )
-
-
-class CommentViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, GenericViewSet):
+class CommentViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, GenericViewSet):
     queryset = Post.objects.all()
     serializer_class = CommentSerializer
-
-    # def perform_create(self, serializer):
-    #     serializer.save(user=self.request.user)
 
     def perform_create(self, serializer):
         post = get_object_or_404(Post, id=self.kwargs.get('post_pk'))
 
         serializer.save(
             user=self.request.user,
-            post=post)
-        # post_id=int(self.kwargs['post_pk']),
+            post=post
+        )
+        # post_id=int(self.kwargs['post_pk']) request 믿을 수 x
 
 
-class LikeNestedViewSet(mixins.CreateModelMixin, mixins.DestroyModelMixin, GenericViewSet):
+class LikeViewSet(mixins.CreateModelMixin, mixins.DestroyModelMixin, GenericViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
 
-    def get_queryset(self):
-        return Like.objects.filter(post_id=self.kwargs['post_id'])
-
     def perform_create(self, serializer):
+        post = get_object_or_404(Post, id=self.kwargs.get('post_pk'))
+
         serializer.save(
             user=self.request.user,
-            post_id=int(self.kwargs['post_pk']),
+            post=post
         )
+
+        Post.objects.filter(id=post.id).update(like_count=F('like_count') + 1)
+
+    def perform_destroy(self, instance):
+        Post.objects.filter(id=instance.post_id).update(like_count=F('like_count') - 1)
+
+        super().perform_destroy(instance)
