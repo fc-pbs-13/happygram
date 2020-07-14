@@ -11,11 +11,21 @@ class PhotoSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
-        return super().validate(attrs)
+        try:
+            level = Comment.objects.get(pk=self.context['view'].kwargs['comment_pk']).level
+        except:
+            # 댓글인 경우
+            return super().validate(attrs)
+
+        # 대댓글인 경우 reply
+        if level == 0:
+            return super().validate(attrs)
+        else:
+            raise serializers.ValidationError('대댓글만 작성 가능')
 
     class Meta:
         model = Comment
-        fields = ('id', 'post_id', 'parent', 'user_id', 'contents')
+        fields = ('id', 'post_id', 'parent', 'user_id', 'contents', 'level')
 
 
 class CustomUniqueTogetherValidator(UniqueTogetherValidator):
