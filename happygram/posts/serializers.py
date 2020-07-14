@@ -8,8 +8,17 @@ class PhotoSerializer(serializers.ModelSerializer):
         model = Photo
         fields = ('image',)
 
+class RecursiveField(serializers.Serializer):
+    """
+    Self-referential field for MPTT.
+    """
+    def to_representation(self, value):
+        serializer = self.parent.parent.__class__(value, context=self.context)
+        return serializer.data
 
 class CommentSerializer(serializers.ModelSerializer):
+    children = RecursiveField(many=True, required=False)
+
     def validate(self, attrs):
         try:
             level = Comment.objects.get(pk=self.context['view'].kwargs['comment_pk']).level

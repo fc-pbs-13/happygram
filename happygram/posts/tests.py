@@ -46,8 +46,11 @@ class PostTestCase(APITestCase):
     def test_post_list(self):
         """"포스트 리스트"""
         self.posts = baker.make('posts.Post', _quantity=2, caption='hello bye', user=self.user)
+        self.comment = Comment.objects.create(post=self.post, user=self.user, contents="byebye python")
+        self.reply = Comment.objects.create(user=self.user, parent=self.comment, contents="hihi python")
 
         self.user2 = User.objects.create(email="hello@pl.com", password="1234")
+
 
         # self.user로 like post
         self.client.force_authenticate(user=self.user)
@@ -57,6 +60,7 @@ class PostTestCase(APITestCase):
         self.client.force_authenticate(user=request_user)
         response = self.client.get('/api/posts')
 
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # 페이지 네이션할 때 response.data['result']
