@@ -6,10 +6,13 @@ from rest_framework.validators import UniqueTogetherValidator
 class PhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Photo
-        fields = ('id', 'post_id', 'image')
+        fields = ('image',)
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        return super().validate(attrs)
+
     class Meta:
         model = Comment
         fields = ('id', 'post_id', 'parent', 'user_id', 'contents')
@@ -20,7 +23,6 @@ class CustomUniqueTogetherValidator(UniqueTogetherValidator):
         attrs['user_id'] = serializer.context['request'].user.id
         attrs['post_id'] = serializer.context['request'].parser_context['kwargs']['post_pk']
         super().enforce_required_fields(attrs, serializer)
-
 
 
 class LikeSerializer(serializers.ModelSerializer):
@@ -41,18 +43,36 @@ class PostSerializer(serializers.ModelSerializer):
     _img = PhotoSerializer(many=True, read_only=True, source='img')
     img = serializers.ListField(child=serializers.ImageField(), write_only=True)
     comments = CommentSerializer(many=True, read_only=True)
-    post_like = LikeSerializer(many=True, read_only=True)
+    user_like = serializers.SerializerMethodField()
+    user_like_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
-        fields = ('id', 'email', 'img', '_img', 'caption', 'created', 'modified', 'comments', 'post_like')
+        fields = (
+            'id', 'email', 'img', '_img', 'caption', 'created',
+            'modified', 'comments', 'like_count', 'user_like',
+            'user_like_id'
+        )
 
     def create(self, validated_data):
-        images = validated_data.pop('img')
+        images = validated_data.pop('img')  # post 모델 안에 img 없음
 
         post = Post.objects.create(**validated_data)
-
+        photo_list = []
         for image in images:
-            Photo.objects.create(post=post, image=image)
+            photo_list.append(Photo(post=post, image=image))
+        Photo.objects.bulk_create(photo_list)
+
         return post
 
+    def get_user_like(self, obj):
+        """request user가 post를 like 여부"""
+        return Like.objects.filter(post=obj, user=self.context['request'].user).exists()
+
+    def get_user_like_id(self, obj):
+        """request user가 post를 like했을 때 like_id -> delete할 때 필요 """
+        try:
+            like_id = Like.objects.get(post=obj, user=self.context['request'].user).id
+        except:
+            like_id = ""
+        return like_id
