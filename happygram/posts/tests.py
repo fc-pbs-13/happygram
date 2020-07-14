@@ -47,22 +47,24 @@ class PostTestCase(APITestCase):
         """"포스트 리스트"""
         self.posts = baker.make('posts.Post', _quantity=2, caption='hello bye', user=self.user)
         self.comment = Comment.objects.create(post=self.post, user=self.user, contents="byebye python")
+        self.comment1 = Comment.objects.create(post=self.post, user=self.user, contents="second python")
         self.reply = Comment.objects.create(user=self.user, parent=self.comment, contents="hihi python")
+        self.reply = Comment.objects.create(user=self.user, parent=self.comment, contents="haha python")
 
         self.user2 = User.objects.create(email="hello@pl.com", password="1234")
 
 
         # self.user로 like post
-        self.client.force_authenticate(user=self.user)
+        # self.client.force_authenticate(user=self.user)
         response_like = self.client.post(f'/api/posts/{self.post.id}/likes')
 
         request_user = self.user  # request_user를 user or user2로 테스트
         self.client.force_authenticate(user=request_user)
         response = self.client.get('/api/posts')
 
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        print(response.data)
         # 페이지 네이션할 때 response.data['result']
         for post_response, post in zip(response.data, self.posts):
             self.assertEqual(post_response['caption'], post.caption)

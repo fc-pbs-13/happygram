@@ -25,7 +25,7 @@ class Comment(MPTTModel):
     post = models.ForeignKey('posts.Post', related_name='comments', on_delete=models.CASCADE, null=True)
     user = models.ForeignKey('users.User', on_delete=models.CASCADE)
     contents = models.CharField(max_length=200)
-    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name="children")
 
 
 class Like(models.Model):

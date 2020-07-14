@@ -34,7 +34,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ('id', 'post_id', 'parent', 'user_id', 'contents', 'level')
+        fields = ('id', 'post_id', 'parent', 'user_id', 'contents', 'level', 'children')
 
 
 class CustomUniqueTogetherValidator(UniqueTogetherValidator):
@@ -86,6 +86,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_user_like(self, obj):
         """request user가 post를 like 여부"""
+
         return Like.objects.filter(post=obj, user=self.context['request'].user).exists()
 
     def get_user_like_id(self, obj):
