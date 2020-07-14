@@ -44,12 +44,14 @@ class PostSerializer(serializers.ModelSerializer):
     img = serializers.ListField(child=serializers.ImageField(), write_only=True)
     comments = CommentSerializer(many=True, read_only=True)
     user_like = serializers.SerializerMethodField()
+    user_like_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = (
             'id', 'email', 'img', '_img', 'caption', 'created',
-            'modified', 'comments', 'like_count', 'user_like'
+            'modified', 'comments', 'like_count', 'user_like',
+            'user_like_id'
         )
 
     def create(self, validated_data):
@@ -64,6 +66,13 @@ class PostSerializer(serializers.ModelSerializer):
         return post
 
     def get_user_like(self, obj):
-        """request user가 post를 like 여"""
+        """request user가 post를 like 여부"""
         return Like.objects.filter(post=obj, user=self.context['request'].user).exists()
 
+    def get_user_like_id(self, obj):
+        """request user가 post를 like했을 때 like_id -> delete할 때 필요 """
+        try:
+            like_id = Like.objects.get(post=obj, user=self.context['request'].user).id
+        except:
+            like_id = ""
+        return like_id

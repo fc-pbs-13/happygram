@@ -53,30 +53,22 @@ class PostTestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
         response_like = self.client.post(f'/api/posts/{self.post.id}/likes')
 
-        request_user = self.user # request_user를 user or user2로 테스트
+        request_user = self.user  # request_user를 user or user2로 테스트
         self.client.force_authenticate(user=request_user)
         response = self.client.get('/api/posts')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # 페이지 네이션할 때 response.data['result']
-        print(response.data)
         for post_response, post in zip(response.data, self.posts):
             self.assertEqual(post_response['caption'], post.caption)
             self.assertEqual(post_response['email'], post.user.email)
             self.assertEqual(post_response['user_like'], Like.objects.filter(post=post, user=request_user).exists())
-
-    def test_post_detail(self):
-        """"포스트 디테일"""
-        self.client.force_authenticate(user=self.user)
-
-        response = self.client.get(f'/api/posts/{self.post.id}')
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        post_response = Munch(response.data)
-        self.assertTrue(post_response.id)
-        self.assertEqual(post_response.caption, self.post.caption)
+            try:
+                like_id = Like.objects.filter(post=post, user=request_user).id
+            except:
+                like_id = ''
+            self.assertEqual(post_response['user_like_id'], like_id)
 
     def test_post_update(self):
         """포스트 업데이"""

@@ -7,7 +7,7 @@ from posts.models import Post, Comment, Like
 from posts.serializers import PostSerializer, CommentSerializer, LikeSerializer
 
 
-class PostViewSet(ModelViewSet):
+class PostViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,mixins.UpdateModelMixin, mixins.DestroyModelMixin, GenericViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
 
