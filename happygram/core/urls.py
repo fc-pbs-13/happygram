@@ -16,8 +16,12 @@ router.register(r'likes', LikeViewSet)
 comment_router = routers.NestedSimpleRouter(router, r'posts', lookup='post')
 comment_router.register(r'comments', CommentViewSet, basename='post_comment')
 
+# post-comment-reply
+reply_router = routers.NestedSimpleRouter(router, r'comments', lookup='comment')
+reply_router.register(r'reply', CommentViewSet, basename='comment_reply')
+
 # post-like-create
 like_router = routers.NestedSimpleRouter(router, r'posts', lookup='post')
 like_router.register(r'likes', LikeViewSet, basename='post_like')
 
-urlpatterns = router.urls + comment_router.urls + like_router.urls
+urlpatterns = router.urls + comment_router.urls + like_router.urls + reply_router.urls

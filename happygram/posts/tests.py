@@ -46,8 +46,13 @@ class PostTestCase(APITestCase):
     def test_post_list(self):
         """"포스트 리스트"""
         self.posts = baker.make('posts.Post', _quantity=2, caption='hello bye', user=self.user)
+        self.comment = Comment.objects.create(post=self.post, user=self.user, contents="byebye python")
+        self.comment1 = Comment.objects.create(post=self.post, user=self.user, contents="second python")
+        self.reply = Comment.objects.create(user=self.user, parent=self.comment, contents="hihi python")
+        self.reply = Comment.objects.create(user=self.user, parent=self.comment, contents="haha python")
 
         self.user2 = User.objects.create(email="hello@pl.com", password="1234")
+
 
         # self.user로 like post
         self.client.force_authenticate(user=self.user)
@@ -59,6 +64,7 @@ class PostTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        print(response.data)
         # 페이지 네이션할 때 response.data['result']
         for post_response, post in zip(response.data, self.posts):
             self.assertEqual(post_response['caption'], post.caption)
@@ -71,7 +77,7 @@ class PostTestCase(APITestCase):
             self.assertEqual(post_response['user_like_id'], like_id)
 
     def test_post_update(self):
-        """포스트 업데이"""
+        """포스트 업데이트"""
 
         prev_caption = self.post.caption
 
@@ -101,10 +107,9 @@ class PostTestCase(APITestCase):
 
 class CommentTestCase(APITestCase):
     def setUp(self) -> None:
-        self.user = User.objects.create(email="abc@abc.com", password="1234")
-        self.posts = []
+        self.user = User.objects.create(email="abc@dfdfdfR.com", password="1234")
         self.post = Post.objects.create(caption="good bye.. ", user_id=self.user.id)
-        self.posts.append(self.post)
+        self.comment = Comment.objects.create(post=self.post, user=self.user, contents="byebye python")
 
     def test_comment_create(self):
         """댓글 생성"""
@@ -126,38 +131,63 @@ class CommentTestCase(APITestCase):
 
     def test_comment_update(self):
         """댓글 수정"""
-        comment = Comment.objects.create(post=self.post, user=self.user, contents="byebye python")
 
         self.client.force_authenticate(user=self.user)
 
         data = {
             'contents': 'hi~~~~~~!!!!',
         }
-        response = self.client.patch(f'/api/comments/{comment.id}', data=data)
+        response = self.client.patch(f'/api/comments/{self.comment.id}', data=data)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         comment_response = Munch(response.data)
         self.assertEqual(comment_response.contents, data['contents'])
-        self.assertNotEqual(comment_response.contents, comment.contents)
+        self.assertNotEqual(comment_response.contents, self.comment.contents)
 
     def test_comment_destroy(self):
-        comment = Comment.objects.create(post=self.post, user=self.user, contents="byebye python")
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.delete(f'/api/comments/{self.comment.id}')
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Post.objects.filter(pk=self.comment.id).count(), 0)
+
+    def test_reply_create(self):
+        data = {
+            'contents': 'reply!!!!!!!!!!!!!!!!',
+        }
 
         self.client.force_authenticate(user=self.user)
 
-        response = self.client.delete(f'/api/comments/{comment.id}')
+        response = self.client.post(f'/api/comments/{self.comment.id}/reply', data=data)
 
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Post.objects.filter(pk=comment.id).count(), 0)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_recomment_create(self):
-        pass
+        post_response = Munch(response.data)
+        self.assertTrue(post_response.id)
+        self.assertEqual(post_response.contents, data['contents'])
+        self.assertEqual(post_response.user_id, self.user.id)
+
+    def test_reply_level(self):
+        data = {
+            'contents': 'reply!!!!!!!!!!!!!!!!',
+        }
+        self.client.force_authenticate(user=self.user)
+
+        response_success = self.client.post(f'/api/comments/{self.comment.id}/reply', data=data)
+
+        data = {'contents': " 대대댓글은 no! "}
+        response_fail = self.client.post(f"/api/comments/{response_success.data['id']}/reply", data=data)
+
+        self.assertEqual(response_fail.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertEqual(response_success.data['level'], 1)  # 댓글의 레벨이 1인 경우 이 댓글에 대댓글을 남길 수 없음
 
 
 class PostLikeTestCase(APITestCase):
     def setUp(self) -> None:
-        self.user = User.objects.create(email="abc@abc.com", password="1234")
+        self.user = User.objects.create(email="abc@efr.com", password="1234")
         self.post = Post.objects.create(caption="good bye.. ", user_id=self.user.id)
 
     def test_like_duplicate(self):

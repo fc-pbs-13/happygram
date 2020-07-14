@@ -21,10 +21,11 @@ class Photo(models.Model):
 
 
 class Comment(MPTTModel):
-    post = models.ForeignKey('posts.Post', related_name='comments', on_delete=models.CASCADE)
+    # todo reply create할 때 post - null true -> safe? (Admin) / false -> 시리얼라이저에 reply까지 다 불러온다
+    post = models.ForeignKey('posts.Post', related_name='comments', on_delete=models.CASCADE, null=True)
     user = models.ForeignKey('users.User', on_delete=models.CASCADE)
     contents = models.CharField(max_length=200)
-    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name="children")
 
 
 class Like(models.Model):
