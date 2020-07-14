@@ -1,3 +1,4 @@
+from django.contrib.auth.models import AnonymousUser
 from rest_framework import serializers
 from posts.models import Post, Photo, Comment, Like
 from rest_framework.validators import UniqueTogetherValidator
@@ -8,13 +9,16 @@ class PhotoSerializer(serializers.ModelSerializer):
         model = Photo
         fields = ('image',)
 
+
 class RecursiveField(serializers.Serializer):
     """
     Self-referential field for MPTT.
     """
+
     def to_representation(self, value):
         serializer = self.parent.parent.__class__(value, context=self.context)
         return serializer.data
+
 
 class CommentSerializer(serializers.ModelSerializer):
     children = RecursiveField(many=True, required=False)
@@ -86,7 +90,9 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_user_like(self, obj):
         """request user가 post를 like 여부"""
-
+        result = isinstance(self.context['request'].user, AnonymousUser)
+        if result:
+            return False
         return Like.objects.filter(post=obj, user=self.context['request'].user).exists()
 
     def get_user_like_id(self, obj):

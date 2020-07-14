@@ -55,7 +55,7 @@ class PostTestCase(APITestCase):
 
 
         # self.user로 like post
-        # self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.user)
         response_like = self.client.post(f'/api/posts/{self.post.id}/likes')
 
         request_user = self.user  # request_user를 user or user2로 테스트
