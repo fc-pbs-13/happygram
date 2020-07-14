@@ -9,9 +9,8 @@ from users.models import User
 class PostTestCase(APITestCase):
     def setUp(self) -> None:
         self.user = User.objects.create(email="abc@abc.com", password="1234")
-        self.posts = []
         self.post = Post.objects.create(caption="good bye.. ", user_id=self.user.id)
-        self.posts.append(self.post)
+        # self.posts.append(self.post)
 
     def temporary_image(self):
         """
@@ -46,22 +45,26 @@ class PostTestCase(APITestCase):
 
     def test_post_list(self):
         """"포스트 리스트"""
-        # 데이터 만들기
-        self.users = baker.make('users.User', _quantity=2)
+        self.posts = baker.make('posts.Post', _quantity=2, caption='hello bye', user=self.user)
 
-        for user in self.users:
-            self.posts += baker.make('posts.Post', _quantity=len(self.users), caption='hello bye', user=user)
+        self.user2 = User.objects.create(email="hello@pl.com", password="1234")
 
+        # self.user로 like post
         self.client.force_authenticate(user=self.user)
+        response_like = self.client.post(f'/api/posts/{self.post.id}/likes')
 
+        request_user = self.user # request_user를 user or user2로 테스트
+        self.client.force_authenticate(user=request_user)
         response = self.client.get('/api/posts')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # 페이지 네이션할 때 response.data['result']
+        print(response.data)
         for post_response, post in zip(response.data, self.posts):
             self.assertEqual(post_response['caption'], post.caption)
             self.assertEqual(post_response['email'], post.user.email)
+            self.assertEqual(post_response['user_like'], Like.objects.filter(post=post, user=request_user).exists())
 
     def test_post_detail(self):
         """"포스트 디테일"""
@@ -102,6 +105,14 @@ class PostTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Post.objects.filter(pk=self.post.id).count(), 0)
+
+
+class CommentTestCase(APITestCase):
+    def setUp(self) -> None:
+        self.user = User.objects.create(email="abc@abc.com", password="1234")
+        self.posts = []
+        self.post = Post.objects.create(caption="good bye.. ", user_id=self.user.id)
+        self.posts.append(self.post)
 
     def test_comment_create(self):
         """댓글 생성"""
@@ -152,7 +163,7 @@ class PostTestCase(APITestCase):
         pass
 
 
-class CommentTestCase(APITestCase):
+class PostLikeTestCase(APITestCase):
     def setUp(self) -> None:
         self.user = User.objects.create(email="abc@abc.com", password="1234")
         self.post = Post.objects.create(caption="good bye.. ", user_id=self.user.id)
@@ -166,6 +177,16 @@ class CommentTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
 
+    def test_like_count(self):
+        self.client.force_authenticate(user=self.user)
+
+        self.post2 = Post.objects.create(caption="hi hi!.. ", user_id=self.user.id)
+
+        response = self.client.post(f'/api/posts/{self.post.id}/likes')
+        response1 = self.client.post(f'/api/posts/{self.post2.id}/likes')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
     def test_like_destroy(self):
         self.client.force_authenticate(user=self.user)
 
@@ -174,5 +195,4 @@ class CommentTestCase(APITestCase):
         response = self.client.delete(f"/api/likes/{response_create.data['id']}")
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
         self.assertEqual(Post.objects.get(pk=self.post.id).like_count, 0)

@@ -43,11 +43,14 @@ class PostSerializer(serializers.ModelSerializer):
     _img = PhotoSerializer(many=True, read_only=True, source='img')
     img = serializers.ListField(child=serializers.ImageField(), write_only=True)
     comments = CommentSerializer(many=True, read_only=True)
-
+    user_like = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
-        fields = ('id', 'email', 'img', '_img', 'caption', 'created', 'modified', 'comments', 'like_count')
+        fields = (
+            'id', 'email', 'img', '_img', 'caption', 'created',
+            'modified', 'comments', 'like_count', 'user_like'
+        )
 
     def create(self, validated_data):
         images = validated_data.pop('img')  # post 모델 안에 img 없음
@@ -59,3 +62,8 @@ class PostSerializer(serializers.ModelSerializer):
         Photo.objects.bulk_create(photo_list)
 
         return post
+
+    def get_user_like(self, obj):
+        """request user가 post를 like 여"""
+        return Like.objects.filter(post=obj, user=self.context['request'].user).exists()
+
