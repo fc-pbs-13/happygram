@@ -23,6 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UpdatePasswordSerializer(serializers.ModelSerializer):
     """update user password """
+
     class Meta:
         model = User
         fields = ('password',)
@@ -57,3 +58,4 @@ class CustomAuthTokenSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
+

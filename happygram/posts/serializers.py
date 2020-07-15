@@ -13,6 +13,7 @@ class PhotoSerializer(serializers.ModelSerializer):
 class RecursiveField(serializers.Serializer):
     """
     Self-referential field for MPTT.
+    대댓글 작성에
     """
 
     def to_representation(self, value):

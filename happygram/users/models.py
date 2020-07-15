@@ -56,3 +56,5 @@ class User(AbstractUser):
         user_is = Profile.objects.filter(user_id=self.id).exists()
         if not user_is:
             Profile.objects.create(user_id=self.id)
+
+
