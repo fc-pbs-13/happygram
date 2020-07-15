@@ -1,3 +1,5 @@
+from model_bakery import baker
+
 from profiles.models import Profile
 from users.models import User
 from django.test import TestCase
@@ -106,7 +108,7 @@ class UserTestCase(APITestCase):
     def test_update_password(self):
         update_pwd = {"password": "2222"}
 
-        token=Token.objects.create(user=self.test_user)
+        token = Token.objects.create(user=self.test_user)
         self.client.force_authenticate(user=self.test_user, token=token.key)
 
         response = self.client.patch('/api/users/update_password', data=update_pwd)
@@ -114,7 +116,7 @@ class UserTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         update_login = {"email": "test@test.com", "password": update_pwd['password']}
-        response2 = self.client.post('/api/users/login', data= update_login)
-        print(response2)
+        response2 = self.client.post('/api/users/login', data=update_login)
         self.assertTrue(response2.data['token'])
+
 
