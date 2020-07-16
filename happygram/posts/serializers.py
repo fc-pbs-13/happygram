@@ -76,8 +76,8 @@ class PostSerializer(serializers.ModelSerializer):
         return post
 
     def get_user_like_id(self, obj):
-        """request user가 post를 like했을 때 like_id -> delete할 때 필요 """
-        like_id = self.context['view'].d.get(obj.id)
+        """ request user가 like한 포스트들은 like_id가 보인다   """
+        like_id = self.context['view'].like_dic.get(obj.id)
         return like_id
 
 
@@ -94,9 +94,23 @@ class LikeSerializer(serializers.ModelSerializer):
         ]
 
 
+class LikePostSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email', read_only=True)
+    _img = PhotoSerializer(many=True, read_only=True, source='img')
+
+    class Meta:
+        model = Post
+        fields = (
+            'id', 'email', '_img',
+        )
+
+
 class UserLikeListSerializer(serializers.ModelSerializer):
-    post = PostSerializer(read_only=True)
+    like_post = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Like
-        field = ('like', 'post')
+        fields = ('id', 'like_post', 'user')
+
+    def get_like_post(self, obj):
+        return LikePostSerializer(obj.post).data

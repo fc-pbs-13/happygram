@@ -185,7 +185,9 @@ class CommentTestCase(APITestCase):
 class PostLikeTestCase(APITestCase):
     def setUp(self) -> None:
         self.user = User.objects.create(email="abc@efr.com", password="1234")
+        self.user1 = User.objects.create(email="abdfdfc@efr.com", password="1234")
         self.post = Post.objects.create(caption="good bye.. ", user_id=self.user.id)
+        self.post1 = Post.objects.create(caption="good bye.. ", user_id=self.user.id)
 
     def test_like_duplicate(self):
         self.client.force_authenticate(user=self.user)
@@ -232,3 +234,14 @@ class PostLikeTestCase(APITestCase):
 
         print(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_user_like_Get(self):
+        like_list = baker.make('posts.Like', post=self.post, user=self.user)
+        like_lli = baker.make('posts.Like', post=self.post1, user=self.user)
+        like_list_user = baker.make('posts.Like', post=self.post, user=self.user1)
+
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get('/api/likes')
+
+        print(response.data)

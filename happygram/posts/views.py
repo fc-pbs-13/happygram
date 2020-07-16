@@ -18,7 +18,6 @@ class PostViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.UpdateM
         # 해당 포스트의 좋아요중 내가 한것만
         like_list = list(Like.objects.filter(user=self.request.user, post__in=page))
         self.d = {like.post_id: like.id for like in like_list}
-        # self._my_likes = {post.id: like_list[?] for post in self.like_list}
         return page
 
     def perform_create(self, serializer):
@@ -53,8 +52,17 @@ class LikeViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Destroy
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
 
+    def get_queryset(self):
+        if self.action == 'list':
+            return super().get_queryset().filter(user=self.request.user).prefetch_related('post')
+
+        return super().get_queryset()
+
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
     def get_serializer_class(self):
-        if self.action == 'get':
+        if self.action == 'list':
             return UserLikeListSerializer
         return super().get_serializer_class()
 
