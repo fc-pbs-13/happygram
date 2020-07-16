@@ -4,13 +4,22 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from django.db.models import F
 from posts.models import Post, Comment, Like
-from posts.serializers import PostSerializer, CommentSerializer, LikeSerializer
+from posts.serializers import PostSerializer, CommentSerializer, LikeSerializer, UserLikeListSerializer
 
 
 class PostViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin,
                   GenericViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
+
+    def paginate_queryset(self, queryset):
+        # 모든 포스트
+        page = super().paginate_queryset(queryset)
+        # 해당 포스트의 좋아요중 내가 한것만
+        like_list = list(Like.objects.filter(user=self.request.user, post__in=page))
+        self.d = {like.post_id: like.id for like in like_list}
+        # self._my_likes = {post.id: like_list[?] for post in self.like_list}
+        return page
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -22,15 +31,16 @@ class CommentViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.De
 
     def perform_create(self, serializer):
         if 'post_pk' in self.kwargs:
+            #  댓글인 경우
             post = get_object_or_404(Post, id=self.kwargs.get('post_pk'))
 
             serializer.save(
                 user=self.request.user,
                 post=post
             )
-        # post_id=int(self.kwargs['post_pk']) request 믿을 수 x
 
         elif 'comment_pk' in self.kwargs:
+            # 대댓글인 경우
             parent = get_object_or_404(Comment, id=self.kwargs.get('comment_pk'))
 
             serializer.save(
@@ -39,9 +49,14 @@ class CommentViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.De
             )
 
 
-class LikeViewSet(mixins.CreateModelMixin, mixins.DestroyModelMixin, GenericViewSet):
+class LikeViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.DestroyModelMixin, GenericViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'get':
+            return UserLikeListSerializer
+        return super().get_serializer_class()
 
     def perform_create(self, serializer):
         post = get_object_or_404(Post, id=self.kwargs.get('post_pk'))
@@ -50,10 +65,3 @@ class LikeViewSet(mixins.CreateModelMixin, mixins.DestroyModelMixin, GenericView
             user=self.request.user,
             post=post
         )
-
-        Post.objects.filter(id=post.id).update(like_count=F('like_count') + 1)
-
-    def perform_destroy(self, instance):
-        Post.objects.filter(id=instance.post_id).update(like_count=F('like_count') - 1)
-
-        super().perform_destroy(instance)

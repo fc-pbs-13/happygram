@@ -8,11 +8,8 @@ from mptt.models import MPTTModel
 
 class Post(TimeStampedModel):
     user = models.ForeignKey('users.User', on_delete=models.CASCADE)
-    # images = ArrayField(models.ImageField(upload_to='post_images'), null=True,
-    #                     blank=True)  # null False 인데 테스트코드 작성으로 일단 true다->>>> 일단 photo모델로 만들었
     caption = models.CharField(max_length=200, blank=True)
     like_count = models.PositiveIntegerField(default=0)
-    # colletions = momdels.ForeignKey
 
 
 class Photo(models.Model):
@@ -32,6 +29,17 @@ class Like(models.Model):
     post = models.ForeignKey('posts.Post', related_name='post_like', on_delete=models.CASCADE)
     user = models.ForeignKey('users.User', related_name='user_like', on_delete=models.CASCADE)
 
-
     class Meta:
         unique_together = ['post', 'user']
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        # like create count +1
+        Post.objects.filter(id=self.post.id).update(like_count=F('like_count') + 1)
+        super().save(force_insert, force_update, using, update_fields)
+
+    def delete(self, using=None, keep_parents=False):
+        # like delete count -1
+        Post.objects.filter(id=self.post_id).update(like_count=F('like_count') - 1)
+        return super().delete(using, keep_parents)
+
+

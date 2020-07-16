@@ -2,7 +2,6 @@ from model_bakery import baker
 from munch import Munch
 from rest_framework import status
 from rest_framework.test import APITestCase
-
 from relations.models import Relation
 
 
@@ -11,7 +10,7 @@ class UserRelationTestCase(APITestCase):
         self.users = baker.make('users.User', _quantity=2)
         self.data = {
             'to_user': self.users[1].id,
-            'related_type': 'f',
+            'related_type': 'f'
         }
 
     def test_relations_create(self):
@@ -37,9 +36,9 @@ class UserRelationTestCase(APITestCase):
 
     def test_relations_update(self):
         relation = Relation.objects.create(from_user=self.users[0], to_user=self.users[1], related_type='f')
-
         update_data = {
-            'related_type': 'b'
+            'related_type': 'b',
+            'to_user': relation.to_user.id
         }
         response = self.client.patch(f'/api/relations/{relation.id}', data=update_data)
 
@@ -56,4 +55,5 @@ class UserRelationTestCase(APITestCase):
         response = self.client.post(f'/api/relations', data=self.data)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
+
 

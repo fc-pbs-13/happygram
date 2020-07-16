@@ -9,8 +9,9 @@ from users.models import User
 class PostTestCase(APITestCase):
     def setUp(self) -> None:
         self.user = User.objects.create(email="abc@abc.com", password="1234")
+        self.posts = []
         self.post = Post.objects.create(caption="good bye.. ", user_id=self.user.id)
-        # self.posts.append(self.post)
+        self.posts.append(self.post)
 
     def temporary_image(self):
         """
@@ -45,14 +46,13 @@ class PostTestCase(APITestCase):
 
     def test_post_list(self):
         """"포스트 리스트"""
-        self.posts = baker.make('posts.Post', _quantity=2, caption='hello bye', user=self.user)
-        self.comment = Comment.objects.create(post=self.post, user=self.user, contents="byebye python")
-        self.comment1 = Comment.objects.create(post=self.post, user=self.user, contents="second python")
-        self.reply = Comment.objects.create(user=self.user, parent=self.comment, contents="hihi python")
-        self.reply = Comment.objects.create(user=self.user, parent=self.comment, contents="haha python")
+        self.posts += baker.make('posts.Post', _quantity=2, user=self.user)
+        self.comment = Comment.objects.create(post=self.post, user=self.user)
+        self.comment1 = Comment.objects.create(post=self.post, user=self.user)
+        self.reply = Comment.objects.create(user=self.user, parent=self.comment)
+        self.reply1 = Comment.objects.create(user=self.user, parent=self.comment)
 
         self.user2 = User.objects.create(email="hello@pl.com", password="1234")
-
 
         # self.user로 like post
         self.client.force_authenticate(user=self.user)
@@ -64,17 +64,14 @@ class PostTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        print(response.data)
-        # 페이지 네이션할 때 response.data['result']
-        for post_response, post in zip(response.data, self.posts):
+        for post_response, post in zip(response.data['results'], self.posts[::-1]):
+            print(post_response, post.caption, post.id)
             self.assertEqual(post_response['caption'], post.caption)
             self.assertEqual(post_response['email'], post.user.email)
-            self.assertEqual(post_response['user_like'], Like.objects.filter(post=post, user=request_user).exists())
-            try:
-                like_id = Like.objects.filter(post=post, user=request_user).id
-            except:
-                like_id = ''
-            self.assertEqual(post_response['user_like_id'], like_id)
+
+            if post.post_like.filter(user=request_user).exists():
+                self.assertEqual(post_response['user_like_id'],
+                                 post.post_like.get(user=request_user).id)
 
     def test_post_update(self):
         """포스트 업데이트"""
@@ -199,15 +196,24 @@ class PostLikeTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
 
-    def test_like_count(self):
+    def test_like_count_create(self):
         self.client.force_authenticate(user=self.user)
 
-        self.post2 = Post.objects.create(caption="hi hi!.. ", user_id=self.user.id)
-
         response = self.client.post(f'/api/posts/{self.post.id}/likes')
-        response1 = self.client.post(f'/api/posts/{self.post2.id}/likes')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertEqual(Post.objects.get(pk=self.post.id).like_count, 1)
+
+    def test_like_count_delete(self):
+        self.client.force_authenticate(user=self.user)
+
+        like = baker.make('posts.Like', post=self.post)
+        response = self.client.delete(f'/api/likes/{like.id}')
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        self.assertEqual(Post.objects.get(pk=self.post.id).like_count, 0)
 
     def test_like_destroy(self):
         self.client.force_authenticate(user=self.user)
@@ -218,3 +224,11 @@ class PostLikeTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Post.objects.get(pk=self.post.id).like_count, 0)
+
+    def test_like_create(self):
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.post(f'/api/posts/{self.post.id}/likes')
+
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)

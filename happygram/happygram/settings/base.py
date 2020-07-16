@@ -91,6 +91,7 @@ DATABASES = {
         'USER': os.environ['DB_USER'],
         'PASSWORD': os.environ['DB_PASSWORD'],
         'PORT': os.environ['DB_PORT'],
+        'ATOMIC_REQUESTS': True,
     }
 }
 
@@ -141,7 +142,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
-
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.CursorPagination',
+    'PAGE_SIZE': 5,
 }
 
 # 들여쓰기 조정

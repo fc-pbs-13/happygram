@@ -3,6 +3,7 @@ from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import authenticate
 
+from posts.serializers import LikeSerializer
 from users.models import User
 
 
@@ -58,4 +59,3 @@ class CustomAuthTokenSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
-
