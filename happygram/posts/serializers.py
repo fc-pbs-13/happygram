@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AnonymousUser
+from django.db.models import F
 from rest_framework import serializers
 from posts.models import Post, Photo, Comment, Like
 from rest_framework.validators import UniqueTogetherValidator
@@ -7,7 +8,7 @@ from rest_framework.validators import UniqueTogetherValidator
 class PhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Photo
-        fields = ('image',)
+        fields = ('id', 'image',)
 
 
 class RecursiveField(serializers.Serializer):
@@ -49,33 +50,18 @@ class CustomUniqueTogetherValidator(UniqueTogetherValidator):
         super().enforce_required_fields(attrs, serializer)
 
 
-class LikeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Like
-        fields = ('id', 'post_id', 'user_id',)
-        # # # validate할 때 user 데이터가 없어서 에러 발생 -> enforce_required_fields를 오버라이드해서 user와 함께 검사!
-        validators = [
-            CustomUniqueTogetherValidator(
-                queryset=Like.objects.all(),
-                fields=('post_id', 'user_id')
-            )
-        ]
-
-
 class PostSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
     _img = PhotoSerializer(many=True, read_only=True, source='img')
     img = serializers.ListField(child=serializers.ImageField(), write_only=True)
     comments = CommentSerializer(many=True, read_only=True)
-    user_like = serializers.SerializerMethodField()
     user_like_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = (
             'id', 'email', 'img', '_img', 'caption', 'created',
-            'modified', 'comments', 'like_count', 'user_like',
-            'user_like_id'
+            'modified', 'comments', 'like_count', 'user_like_id'
         )
 
     def create(self, validated_data):
@@ -89,17 +75,42 @@ class PostSerializer(serializers.ModelSerializer):
 
         return post
 
-    def get_user_like(self, obj):
-        """request user가 post를 like 여부"""
-        result = isinstance(self.context['request'].user, AnonymousUser)
-        if result:
-            return False
-        return Like.objects.filter(post=obj, user=self.context['request'].user).exists()
-
     def get_user_like_id(self, obj):
-        """request user가 post를 like했을 때 like_id -> delete할 때 필요 """
-        try:
-            like_id = Like.objects.get(post=obj, user=self.context['request'].user).id
-        except:
-            like_id = ""
+        """ request user가 like한 포스트들은 like_id가 보인다   """
+        like_id = self.context['view'].like_dic.get(obj.id)
         return like_id
+
+
+class LikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        fields = ('id', 'post_id', 'user_id',)
+        # # # validate할 때 user 데이터가 없어서 에러 발생 -> enforce_required_fields를 오버라이드해서 user와 함께 검사!
+        validators = [
+            CustomUniqueTogetherValidator(
+                queryset=Like.objects.all(),
+                fields=('post_id', 'user_id')
+            )
+        ]
+
+
+class LikePostSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email', read_only=True)
+    _img = PhotoSerializer(many=True, read_only=True, source='img')
+
+    class Meta:
+        model = Post
+        fields = (
+            'id', 'email', '_img',
+        )
+
+
+class UserLikeListSerializer(serializers.ModelSerializer):
+    like_post = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Like
+        fields = ('id', 'like_post', 'user')
+
+    def get_like_post(self, obj):
+        return LikePostSerializer(obj.post).data
