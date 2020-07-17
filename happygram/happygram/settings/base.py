@@ -145,7 +145,3 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'core.pagination.Pagination',
     'PAGE_SIZE': 5,
 }
-
-# 들여쓰기 조정
-
-DEFAULT_LEVEL_INDICATOR = 2

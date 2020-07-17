@@ -5,10 +5,12 @@ from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from django.db.models import F
 from posts.models import Post, Comment, Like
 from posts.serializers import PostSerializer, CommentSerializer, LikeSerializer, UserLikeListSerializer
+from users.models import User
 
 
 class PostViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin,
                   GenericViewSet):
+    """post viewset"""
     queryset = Post.objects.all()
     serializer_class = PostSerializer
 
@@ -17,7 +19,7 @@ class PostViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.UpdateM
         page = super().paginate_queryset(queryset)
         # 해당 포스트의 좋아요중 내가 한것만
         like_list = list(Like.objects.filter(user=self.request.user, post__in=page))
-        self.d = {like.post_id: like.id for like in like_list}
+        self.like_dic = {like.post_id: like.id for like in like_list}
         return page
 
     def perform_create(self, serializer):
@@ -25,6 +27,7 @@ class PostViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.UpdateM
 
 
 class CommentViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, GenericViewSet):
+    """comment viewset"""
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
 
@@ -49,17 +52,14 @@ class CommentViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.De
 
 
 class LikeViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.DestroyModelMixin, GenericViewSet):
+    """like viewset"""
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
 
     def get_queryset(self):
         if self.action == 'list':
             return super().get_queryset().filter(user=self.request.user).prefetch_related('post')
-
         return super().get_queryset()
-
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
 
     def get_serializer_class(self):
         if self.action == 'list':

@@ -1,4 +1,3 @@
-from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from model_utils.models import TimeStampedModel
 from django.db.models import F
@@ -18,11 +17,17 @@ class Photo(models.Model):
 
 
 class Comment(MPTTModel):
-    # todo reply create할 때 post - null true -> safe? (Admin) / false -> 시리얼라이저에 reply까지 다 불러온다
     post = models.ForeignKey('posts.Post', related_name='comments', on_delete=models.CASCADE, null=True)
     user = models.ForeignKey('users.User', on_delete=models.CASCADE)
     contents = models.CharField(max_length=200)
-    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name="children")
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+
+    class MPTTMeta:
+        order_insertion_by = ['-id']
+
+    class Meta:
+        ordering = ('-id',)
 
 
 class Like(models.Model):
