@@ -35,9 +35,9 @@ class UserRelationTestCase(APITestCase):
         self.assertFalse(Relation.objects.filter(pk=relation.id).exists())
 
     def test_relations_update(self):
-        relation = Relation.objects.create(from_user=self.users[0], to_user=self.users[1], related_type='f')
+        relation = Relation.objects.create(from_user=self.users[0], to_user=self.users[1], related_type='follow')
         update_data = {
-            'related_type': 'b',
+            'related_type': 'block',
             'to_user': relation.to_user.id
         }
         response = self.client.patch(f'/api/relations/{relation.id}', data=update_data)

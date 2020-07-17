@@ -2,15 +2,16 @@ from model_bakery import baker
 from munch import Munch
 from rest_framework import status
 from rest_framework.test import APITestCase
+
 from posts.models import Post, Comment, Like
 from users.models import User
 
 
 class PostTestCase(APITestCase):
     def setUp(self) -> None:
-        self.user = User.objects.create(email="abc@abc.com", password="1234")
+        self.user = baker.make('users.User')
         self.posts = []
-        self.post = Post.objects.create(caption="good bye.. ", user_id=self.user.id)
+        self.post = baker.make('posts.Post', user=self.user)
         self.posts.append(self.post)
 
     def temporary_image(self):
@@ -44,17 +45,39 @@ class PostTestCase(APITestCase):
         self.assertEqual(len(post_response._img), len(image_test))
         self.assertEqual(post_response.caption, data['caption'])
 
+    def test_post_comment(self):
+        """댓글 parent - children"""
+        self.comments = baker.make('posts.Comment', _quantity=2, post=self.post, user=self.user, level=0)
+        print(self.comments)
+        self.reply = Comment.objects.create(user=self.user, parent=self.comments[0])
+        self.reply1 = Comment.objects.create(user=self.user, parent=self.comments[1])
+
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get('/api/posts')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        print(response.data['results'])
+        self.fail()
+
+        for post in response.data['results']:
+            print('len', len(post['comments']), len(self.comments))
+            for response_comment, comment in zip(post['comments'], self.comments):
+                print(response_comment['id'], comment.id)
+                # self.assertEqual(response_comment['contents'], comment.contents)
+                # for response_reply , reply in zip(response_comment, comment.children.all()):
+                #     print("ㅎㅎㅎ과연!",response_reply)
+                #     print("어딨냐 ",reply)
+                # self.assertEqual(response_reply, reply)
+
     def test_post_list(self):
         """"포스트 리스트"""
         self.posts += baker.make('posts.Post', _quantity=2, user=self.user)
-        self.comment = Comment.objects.create(post=self.post, user=self.user)
-        self.comment1 = Comment.objects.create(post=self.post, user=self.user)
-        self.reply = Comment.objects.create(user=self.user, parent=self.comment)
-        self.reply1 = Comment.objects.create(user=self.user, parent=self.comment)
+        self.user2 = baker.make('users.User')
+        # self.user2 = User.objects.create(email="hello@pl.com", password="1234")
 
-        self.user2 = User.objects.create(email="hello@pl.com", password="1234")
-
-        # self.user로 like post
+        # self.user로 like post 생성
         self.client.force_authenticate(user=self.user)
         response_like = self.client.post(f'/api/posts/{self.post.id}/likes')
 
@@ -65,10 +88,8 @@ class PostTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         for post_response, post in zip(response.data['results'], self.posts[::-1]):
-            print(post_response, post.caption, post.id)
             self.assertEqual(post_response['caption'], post.caption)
             self.assertEqual(post_response['email'], post.user.email)
-
             if post.post_like.filter(user=request_user).exists():
                 self.assertEqual(post_response['user_like_id'],
                                  post.post_like.get(user=request_user).id)
@@ -104,9 +125,9 @@ class PostTestCase(APITestCase):
 
 class CommentTestCase(APITestCase):
     def setUp(self) -> None:
-        self.user = User.objects.create(email="abc@dfdfdfR.com", password="1234")
-        self.post = Post.objects.create(caption="good bye.. ", user_id=self.user.id)
-        self.comment = Comment.objects.create(post=self.post, user=self.user, contents="byebye python")
+        self.user = baker.make('users.User')
+        self.post = baker.make('posts.Post', user=self.user)
+        self.comment = baker.make('posts.Comment', post=self.post, user=self.user, level=0)  # level = 0 -> 댓글
 
     def test_comment_create(self):
         """댓글 생성"""
@@ -156,9 +177,7 @@ class CommentTestCase(APITestCase):
         }
 
         self.client.force_authenticate(user=self.user)
-
         response = self.client.post(f'/api/comments/{self.comment.id}/reply', data=data)
-
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         post_response = Munch(response.data)
@@ -243,5 +262,24 @@ class PostLikeTestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
 
         response = self.client.get('/api/likes')
-
         print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # self.assertEqual(response.data['results'][1]['like_post'], self.post)
+
+    def test(self):
+        for _ in range(10):
+            self.a()
+            print('---')
+
+        self.fail()
+
+    def a(self):
+        post = baker.make('posts.Post')
+        # comments = baker.make('posts.Comment', post=post, _quantity=2, parent=None)
+        Comment.objects.create(post=post, user=post.user, contents='1')
+        Comment.objects.create(post=post, user=post.user, contents='2')
+
+        print(post.comments.all())
+        for comment in post.comments.all():
+            print(comment.id, comment.contents, comment.created_at, comment.tree_id, comment.lft, comment.parent)

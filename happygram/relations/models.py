@@ -2,10 +2,10 @@ from django.db import models
 
 
 class Relation(models.Model):
-    CHOICE_RELATIONS_TYPE = (
-        ('f', 'follow'),
-        ('b', 'block'),
-    )
+    class Tastechoice(models.TextChoices):
+        follow = 'follow'
+        block = 'block'
+
     from_user = models.ForeignKey(
         'users.User',
         on_delete=models.CASCADE,
@@ -19,7 +19,7 @@ class Relation(models.Model):
         related_query_name='to_users_relation',
     )
     related_type = models.CharField(
-        choices=CHOICE_RELATIONS_TYPE,
+        choices=Tastechoice.choices,
         max_length=10,
     )
 

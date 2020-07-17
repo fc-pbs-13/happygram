@@ -1,8 +1,11 @@
 from django.contrib.auth.models import AnonymousUser
 from django.db.models import F
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+
 from posts.models import Post, Photo, Comment, Like
 from rest_framework.validators import UniqueTogetherValidator
+from rest_framework.generics import get_object_or_404
 
 
 class PhotoSerializer(serializers.ModelSerializer):
@@ -23,24 +26,22 @@ class RecursiveField(serializers.Serializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    children = RecursiveField(many=True, required=False)
+    children = RecursiveField(many=True, required=False)  # 대댓글이 parent 댓글에 붙는다
 
     def validate(self, attrs):
-        try:
-            level = Comment.objects.get(pk=self.context['view'].kwargs['comment_pk']).level
-        except:
-            # 댓글인 경우
-            return super().validate(attrs)
-
-        # 대댓글인 경우 reply
-        if level == 0:
-            return super().validate(attrs)
-        else:
-            raise serializers.ValidationError('대댓글만 작성 가능')
+        if 'comment_pk' in self.context['view'].kwargs:
+            # 대댓글인 경우
+            comment = get_object_or_404(Comment, id=self.context['view'].kwargs['comment_pk'])
+            if comment.level != 0:
+                # 대댓글의 부모가 0이 아니면 에러
+                raise ValidationError
+        return attrs  # 댓글인 경우
 
     class Meta:
         model = Comment
         fields = ('id', 'post_id', 'parent', 'user_id', 'contents', 'level', 'children')
+        ordering = ('-id',)
+
 
 
 class CustomUniqueTogetherValidator(UniqueTogetherValidator):
@@ -66,7 +67,6 @@ class PostSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         images = validated_data.pop('img')  # post 모델 안에 img 없음
-
         post = Post.objects.create(**validated_data)
         photo_list = []
         for image in images:
@@ -77,8 +77,10 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_user_like_id(self, obj):
         """ request user가 like한 포스트들은 like_id가 보인다   """
-        like_id = self.context['view'].like_dic.get(obj.id)
-        return like_id
+        if self.context['view'].action == 'list':
+            like_id = self.context['view'].like_dic.get(obj.id)
+            return like_id
+        return None
 
 
 class LikeSerializer(serializers.ModelSerializer):
@@ -95,6 +97,7 @@ class LikeSerializer(serializers.ModelSerializer):
 
 
 class LikePostSerializer(serializers.ModelSerializer):
+    """like post 생성/ 삭"""
     email = serializers.EmailField(source='user.email', read_only=True)
     _img = PhotoSerializer(many=True, read_only=True, source='img')
 
@@ -106,11 +109,12 @@ class LikePostSerializer(serializers.ModelSerializer):
 
 
 class UserLikeListSerializer(serializers.ModelSerializer):
+    """user가 like한 post list"""
     like_post = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Like
-        fields = ('id', 'like_post', 'user')
+        fields = ('id', 'like_post',)
 
     def get_like_post(self, obj):
         return LikePostSerializer(obj.post).data
