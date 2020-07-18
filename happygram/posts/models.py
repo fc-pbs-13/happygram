@@ -26,9 +26,6 @@ class Comment(MPTTModel):
     class MPTTMeta:
         order_insertion_by = ['-id']
 
-    class Meta:
-        ordering = ('-id',)
-
 
 class Like(models.Model):
     post = models.ForeignKey('posts.Post', related_name='post_like', on_delete=models.CASCADE)
@@ -39,12 +36,12 @@ class Like(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         # like create count +1
-        Post.objects.filter(id=self.post.id).update(like_count=F('like_count') + 1)
         super().save(force_insert, force_update, using, update_fields)
+        # save 이후에 update (save에서 에러 날수도 있음)
+        Post.objects.filter(id=self.post.id).update(like_count=F('like_count') + 1)
 
     def delete(self, using=None, keep_parents=False):
         # like delete count -1
+        delete = super().delete(using, keep_parents)
         Post.objects.filter(id=self.post_id).update(like_count=F('like_count') - 1)
-        return super().delete(using, keep_parents)
-
-
+        return delete

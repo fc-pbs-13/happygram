@@ -43,7 +43,6 @@ class CommentSerializer(serializers.ModelSerializer):
         ordering = ('-id',)
 
 
-
 class CustomUniqueTogetherValidator(UniqueTogetherValidator):
     def enforce_required_fields(self, attrs, serializer):
         attrs['user_id'] = serializer.context['request'].user.id
@@ -110,11 +109,9 @@ class LikePostSerializer(serializers.ModelSerializer):
 
 class UserLikeListSerializer(serializers.ModelSerializer):
     """user가 like한 post list"""
-    like_post = serializers.SerializerMethodField(read_only=True)
+    post = LikePostSerializer(read_only=True)
 
     class Meta:
         model = Like
-        fields = ('id', 'like_post',)
+        fields = ('id', 'post')
 
-    def get_like_post(self, obj):
-        return LikePostSerializer(obj.post).data

@@ -10,7 +10,7 @@ class UserRelationTestCase(APITestCase):
         self.users = baker.make('users.User', _quantity=2)
         self.data = {
             'to_user': self.users[1].id,
-            'related_type': 'f'
+            'related_type': Relation.RelationChoice.follow
         }
 
     def test_relations_create(self):
@@ -19,7 +19,6 @@ class UserRelationTestCase(APITestCase):
         response = self.client.post('/api/relations', data=self.data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
         follow_response = Munch(response.data)
         self.assertEqual(follow_response.to_user, self.data['to_user'])
         self.assertEqual(follow_response.related_type, self.data['related_type'])
