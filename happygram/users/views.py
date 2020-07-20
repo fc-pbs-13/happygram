@@ -6,13 +6,36 @@ from rest_framework.decorators import action
 from rest_framework.fields import EmailField
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
+
+from relations.models import Relation
 from users.models import User
-from users.serializers import UserSerializer, CustomAuthTokenSerializer, UpdatePasswordSerializer
+from users.serializers import UserSerializer, CustomAuthTokenSerializer, UpdatePasswordSerializer, FollowerSerializer, \
+    FollowingSerializer, BlockSerializer
 
 
 class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'follow':
+            return FollowerSerializer
+        elif self.action == 'following':
+            return FollowingSerializer
+        elif self.action == 'block':
+            return BlockSerializer
+        else:
+            return super().get_serializer_class()
+
+    def get_queryset(self):
+        if self.action == 'follow':
+            return Relation.objects.filter(from_user=self.kwargs['pk'], related_type=Relation.RelationChoice.follow)
+        elif self.action == 'following':
+            return Relation.objects.filter(to_user=self.kwargs['pk'], related_type=Relation.RelationChoice.follow)
+        elif self.action == 'block':
+            return Relation.objects.filter(from_user=self.request.user, related_type=Relation.RelationChoice.block)
+        else:
+            return super().get_queryset()
 
     @action(methods=['post'], detail=False)
     def login(self, request, *args, **kwargs):
@@ -38,4 +61,17 @@ class UserViewSet(ModelViewSet):
 
         return Response(status=status.HTTP_200_OK)
 
+    @action(detail=True)
+    def follow(self, request, *args, **kwargs):
+        # 해당 유저의 팔로우 리스트
+        return super().list(request, *args, **kwargs)
 
+    @action(detail=True)
+    # 해당 유저를 팔로우하는 리스
+    def following(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @action(detail=False)
+    def block(self, request, *args, **kwargs):
+        # 해당 유저의 팔로우 리스트
+        return super().list(request, *args, **kwargs)

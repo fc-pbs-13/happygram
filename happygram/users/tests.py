@@ -1,6 +1,7 @@
 from model_bakery import baker
 
 from profiles.models import Profile
+from relations.models import Relation
 from users.models import User
 from django.test import TestCase
 from munch import Munch
@@ -120,3 +121,58 @@ class UserTestCase(APITestCase):
         self.assertTrue(response2.data['token'])
 
 
+class UserFollowTestCase(APITestCase):
+    def setUp(self) -> None:
+        self.users = baker.make('users.User', _quantity=3)
+        self.user_data = {'user': self.users[0]}
+        Relation.objects.create(from_user=self.users[0], to_user=self.users[1],
+                                related_type=Relation.RelationChoice.follow)
+        Relation.objects.create(from_user=self.users[0], to_user=self.users[2],
+                                related_type=Relation.RelationChoice.follow)
+        Relation.objects.create(from_user=self.users[1], to_user=self.users[0],
+                                related_type=Relation.RelationChoice.follow)
+
+    def test_follower_list(self):
+        response = self.client.get(f"/api/users/{self.user_data['user'].id}/follow")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for response_data in response.data['results']:
+            r = Munch(response_data)
+            # response 에 from_user와 profile - user가 Relation objects에 있어야 한다
+            self.assertTrue(Relation.objects.filter(from_user=r.from_user, to_user=r.profile['user'],
+                                                    related_type=Relation.RelationChoice.follow))
+
+    def test_following_list(self):
+        response = self.client.get(f"/api/users/{self.user_data['user'].id}/following")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for response_data in response.data['results']:
+            r = Munch(response_data)
+            # response 에  to_user와 profile-user가 Relation objects에 있어야 한다
+            self.assertTrue(Relation.objects.filter(from_user=r.to_user, to_user=r.profile['user'],
+                                                    related_type=Relation.RelationChoice.follow))
+
+
+class UserBlockTestCase(APITestCase):
+    def setUp(self) -> None:
+        self.users = baker.make('users.User', _quantity=3)
+        self.user_data = {'user': self.users[0]}
+
+        Relation.objects.create(from_user=self.users[0], to_user=self.users[1],
+                                related_type=Relation.RelationChoice.block)
+        Relation.objects.create(from_user=self.users[0], to_user=self.users[2],
+                                related_type=Relation.RelationChoice.block)
+        Relation.objects.create(from_user=self.users[2], to_user=self.users[0],
+                                related_type=Relation.RelationChoice.block)
+
+    def test_block_list(self):
+        self.client.force_authenticate(user=self.users[0])
+        response = self.client.get(f"/api/users/block")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for response_data in response.data['results']:
+            r = Munch(response_data)
+            self.assertTrue(Relation.objects.filter(from_user=r.from_user, to_user=r.profile['user'],
+                                                    related_type=Relation.RelationChoice.block))

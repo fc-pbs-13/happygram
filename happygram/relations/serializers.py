@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
+from profiles.serializers import ProfileSerializer
 from relations.models import Relation
 
 
@@ -23,5 +24,5 @@ class RelationSerializer(serializers.ModelSerializer):
             )
         ]
 
-# class FollowRelationSerializer(serializers.ModelSerializer):
-#     class Meta:
+
+

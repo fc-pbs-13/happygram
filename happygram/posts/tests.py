@@ -179,9 +179,8 @@ class CommentTestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
 
         response = self.client.delete(f'/api/comments/{self.comment.id}')
-
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Post.objects.filter(pk=self.comment.id).count(), 0)
+        self.assertFalse(Comment.objects.filter(pk=self.comment.id).exists())
 
     def test_reply_create(self):
         data = {

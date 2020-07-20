@@ -4,6 +4,8 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import authenticate
 
 from posts.serializers import LikeSerializer
+from profiles.serializers import ProfileSerializer
+from relations.models import Relation
 from users.models import User
 
 
@@ -59,3 +61,30 @@ class CustomAuthTokenSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
+
+
+class FollowerSerializer(serializers.ModelSerializer):
+    # 해당 유저 팔로워 리스트
+    profile = ProfileSerializer(source='to_user.profile', read_only=True)
+
+    class Meta:
+        model = Relation
+        fields = ('id', 'from_user', 'profile')
+
+
+class FollowingSerializer(serializers.ModelSerializer):
+    # 해당 유저의 팔로잉 리스트
+    profile = ProfileSerializer(source='from_user.profile', read_only=True)
+
+    class Meta:
+        model = Relation
+        fields = ('id', 'to_user', 'profile')
+
+
+class BlockSerializer(serializers.ModelSerializer):
+    # 해당 유저의 블록 리스트
+    profile = ProfileSerializer(source='to_user.profile', read_only=True)
+
+    class Meta:
+        model = Relation
+        fields = ('id', 'from_user', 'profile')
