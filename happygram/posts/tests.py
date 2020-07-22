@@ -144,7 +144,6 @@ class PostTestCase(APITestCase):
         for r, post in zip(response.data['results'], post_qs):
             self.assertEqual(r['id'], post.id)
 
-
     def test_post_update(self):
         """포스트 업데이트"""
         prev_caption = self.post.caption
