@@ -2,7 +2,7 @@ from django.db import models
 
 
 class Relation(models.Model):
-    class Tastechoice(models.TextChoices):
+    class RelationChoice(models.TextChoices):
         follow = 'follow'
         block = 'block'
 
@@ -19,7 +19,7 @@ class Relation(models.Model):
         related_query_name='to_users_relation',
     )
     related_type = models.CharField(
-        choices=Tastechoice.choices,
+        choices=RelationChoice.choices,
         max_length=10,
     )
 

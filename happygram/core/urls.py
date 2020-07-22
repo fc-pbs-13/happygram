@@ -2,6 +2,7 @@ from rest_framework.routers import SimpleRouter
 from posts.views import PostViewSet, CommentViewSet, LikeViewSet
 from profiles.views import ProfileViewSet
 from relations.views import RelationViewSet
+from stories.views import StoryViewSet
 from users.views import UserViewSet
 from rest_framework_nested import routers
 
@@ -13,6 +14,7 @@ router.register(r'posts', PostViewSet)
 router.register(r'comments', CommentViewSet)
 router.register(r'likes', LikeViewSet)
 router.register(r'relations', RelationViewSet)
+router.register(r'stories', StoryViewSet)
 
 # post-comment-create
 comment_router = routers.NestedSimpleRouter(router, r'posts', lookup='post')
@@ -25,5 +27,6 @@ reply_router.register(r'reply', CommentViewSet, basename='comment_reply')
 # post-like-create
 like_router = routers.NestedSimpleRouter(router, r'posts', lookup='post')
 like_router.register(r'likes', LikeViewSet, basename='post_like')
+
 
 urlpatterns = router.urls + comment_router.urls + like_router.urls + reply_router.urls

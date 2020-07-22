@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
+from profiles.serializers import ProfileSerializer
 from relations.models import Relation
 
 
@@ -22,3 +23,6 @@ class RelationSerializer(serializers.ModelSerializer):
                 fields=('from_user', 'to_user')
             )
         ]
+
+
+

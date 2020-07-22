@@ -47,10 +47,13 @@ class PostTestCase(APITestCase):
 
     def test_post_comment(self):
         """댓글 parent - children"""
-        self.comments = baker.make('posts.Comment', _quantity=2, post=self.post, user=self.user, level=0)
-        print(self.comments)
-        self.reply = Comment.objects.create(user=self.user, parent=self.comments[0])
-        self.reply1 = Comment.objects.create(user=self.user, parent=self.comments[1])
+        # self.comments = baker.make('posts.Comment', _quantity=2, post=self.post, user=self.user, level=0)
+        comment_a = Comment.objects.create(user=self.user, post=self.post)
+        comment_b = Comment.objects.create(user=self.user, post=self.post)
+        # self.reply = Comment.objects.create(user=self.user, parent=comment_a)
+        # self.reply1 = Comment.objects.create(user=self.user, parent=comment_b)
+        # Comment.objects.create(user=self.user, parent=comment_a)
+        # Comment.objects.create(user=self.user, parent=comment_b)
 
         self.client.force_authenticate(user=self.user)
 
@@ -58,7 +61,17 @@ class PostTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        print(response.data['results'])
+        for comment in self.post.comments.all():
+            print('comment:', comment.id, comment.tree_id, comment.lft)
+            for child in comment.children.all():
+                print('  child:', child.id, child.tree_id, child.lft)
+
+        # print(response.content)
+        for post in response.data['results']:
+            for comment in post['comments']:
+                print('comment:', comment['id'])
+                for child in comment['children']:
+                    print('  child:', child['id'])
         self.fail()
 
         for post in response.data['results']:
@@ -77,7 +90,7 @@ class PostTestCase(APITestCase):
         self.user2 = baker.make('users.User')
         # self.user2 = User.objects.create(email="hello@pl.com", password="1234")
 
-        # self.user로 like post 생성
+        # self.user로 like post 생성 - 1번째 post
         self.client.force_authenticate(user=self.user)
         response_like = self.client.post(f'/api/posts/{self.post.id}/likes')
 
@@ -90,9 +103,8 @@ class PostTestCase(APITestCase):
         for post_response, post in zip(response.data['results'], self.posts[::-1]):
             self.assertEqual(post_response['caption'], post.caption)
             self.assertEqual(post_response['email'], post.user.email)
-            if post.post_like.filter(user=request_user).exists():
-                self.assertEqual(post_response['user_like_id'],
-                                 post.post_like.get(user=request_user).id)
+            if post_response['user_like_id']:  # like 없는 post 있을 수 잇다
+                self.assertEqual(post_response['user_like_id'], post.post_like.get(user=request_user).id)
 
     def test_post_update(self):
         """포스트 업데이트"""
@@ -167,9 +179,8 @@ class CommentTestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
 
         response = self.client.delete(f'/api/comments/{self.comment.id}')
-
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Post.objects.filter(pk=self.comment.id).count(), 0)
+        self.assertFalse(Comment.objects.filter(pk=self.comment.id).exists())
 
     def test_reply_create(self):
         data = {
@@ -203,10 +214,8 @@ class CommentTestCase(APITestCase):
 
 class PostLikeTestCase(APITestCase):
     def setUp(self) -> None:
-        self.user = User.objects.create(email="abc@efr.com", password="1234")
-        self.user1 = User.objects.create(email="abdfdfc@efr.com", password="1234")
-        self.post = Post.objects.create(caption="good bye.. ", user_id=self.user.id)
-        self.post1 = Post.objects.create(caption="good bye.. ", user_id=self.user.id)
+        self.user = baker.make('users.User')
+        self.post = baker.make('posts.Post', user=self.user)
 
     def test_like_duplicate(self):
         self.client.force_authenticate(user=self.user)
@@ -226,15 +235,18 @@ class PostLikeTestCase(APITestCase):
 
         self.assertEqual(Post.objects.get(pk=self.post.id).like_count, 1)
 
-    def test_like_count_delete(self):
+    def test_like_count_decrease(self):
         self.client.force_authenticate(user=self.user)
 
-        like = baker.make('posts.Like', post=self.post)
+        post = baker.make('posts.Post', user=self.user, like_count=9)
+
+        like = baker.make('posts.Like', post=post, user=self.user)
+
         response = self.client.delete(f'/api/likes/{like.id}')
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        self.assertEqual(Post.objects.get(pk=self.post.id).like_count, 0)
+        self.assertEqual(post.like_count, 9)
 
     def test_like_destroy(self):
         self.client.force_authenticate(user=self.user)
@@ -251,10 +263,12 @@ class PostLikeTestCase(APITestCase):
 
         response = self.client.post(f'/api/posts/{self.post.id}/likes')
 
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_user_like_Get(self):
+    def test_user_like_get(self):
+        self.user1 = baker.make('users.User')
+        self.post1 = baker.make('posts.Post', user=self.user)
+        
         like_list = baker.make('posts.Like', post=self.post, user=self.user)
         like_lli = baker.make('posts.Like', post=self.post1, user=self.user)
         like_list_user = baker.make('posts.Like', post=self.post, user=self.user1)
@@ -262,24 +276,24 @@ class PostLikeTestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
 
         response = self.client.get('/api/likes')
-        print(response.data)
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # self.assertEqual(response.data['results'][1]['like_post'], self.post)
 
-    def test(self):
-        for _ in range(10):
-            self.a()
-            print('---')
-
-        self.fail()
-
-    def a(self):
-        post = baker.make('posts.Post')
-        # comments = baker.make('posts.Comment', post=post, _quantity=2, parent=None)
-        Comment.objects.create(post=post, user=post.user, contents='1')
-        Comment.objects.create(post=post, user=post.user, contents='2')
-
-        print(post.comments.all())
-        for comment in post.comments.all():
-            print(comment.id, comment.contents, comment.created_at, comment.tree_id, comment.lft, comment.parent)
+    # def test(self):
+    #     for _ in range(10):
+    #         self.a()
+    #         print('---')
+    #
+    #     self.fail()
+    #
+    # def a(self):
+    #     post = baker.make('posts.Post')
+    #     # comments = baker.make('posts.Comment', post=post, _quantity=2, parent=None)
+    #     Comment.objects.create(post=post, user=post.user, contents='First')
+    #     Comment.objects.create(post=post, user=post.user, contents='Second')
+    #
+    #     print(post.comments.all())
+    #     for comment in post.comments.all():
+    #         print(comment.id, comment.contents, comment.created_at, comment.tree_id, comment.lft, comment.parent)
