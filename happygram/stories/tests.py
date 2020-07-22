@@ -1,3 +1,4 @@
+from dateutil.parser import parse
 import pytz
 from django.utils import timezone
 from model_bakery import baker
@@ -103,9 +104,9 @@ class StoryTestCase(APITestCase):
 
         time_standard = timezone.now() - timedelta(hours=24)
         for r in response.data['results']:
-            date_time_obj = datetime.strptime(r['created'], '%Y-%m-%dT%H:%M:%S.%fZ')
-            story_time = pytz.utc.localize(date_time_obj)
-            self.assertTrue(story_time > time_standard)
+            date_time_obj = parse(r['created'])
+            self.assertTrue(time_standard < date_time_obj)
+
 
     def test_story_read(self):
         """디테일로 조회한 스토리는 story_read model에 저장 -> id 반환"""

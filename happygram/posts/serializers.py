@@ -1,8 +1,9 @@
-from django.contrib.auth.models import AnonymousUser
-from django.db.models import F
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from taggit.models import Tag
 
+from taggit_serializer.serializers import (TagListSerializerField,
+                                           TaggitSerializer)
 from posts.models import Post, Photo, Comment, Like
 from rest_framework.validators import UniqueTogetherValidator
 from rest_framework.generics import get_object_or_404
@@ -50,19 +51,21 @@ class CustomUniqueTogetherValidator(UniqueTogetherValidator):
         super().enforce_required_fields(attrs, serializer)
 
 
-class PostSerializer(serializers.ModelSerializer):
+class PostSerializer(TaggitSerializer, serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
     _img = PhotoSerializer(many=True, read_only=True, source='img')
     img = serializers.ListField(child=serializers.ImageField(), write_only=True)
     comments = CommentSerializer(many=True, read_only=True)
     user_like_id = serializers.SerializerMethodField()
+    tags = TagListSerializerField(required=False)
 
     class Meta:
         model = Post
         fields = (
             'id', 'email', 'img', '_img', 'caption', 'created',
-            'modified', 'comments', 'like_count', 'user_like_id'
+            'modified', 'comments', 'like_count', 'user_like_id', 'tags'
         )
+        extra_kwargs = {'caption': {'required': False}}
 
     def create(self, validated_data):
         images = validated_data.pop('img')  # post 모델 안에 img 없음
@@ -115,3 +118,8 @@ class UserLikeListSerializer(serializers.ModelSerializer):
         model = Like
         fields = ('id', 'post')
 
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ('id', 'name',)

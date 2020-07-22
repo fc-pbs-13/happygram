@@ -2,6 +2,7 @@ from model_bakery import baker
 from munch import Munch
 from rest_framework import status
 from rest_framework.test import APITestCase
+from taggit.models import Tag
 
 from posts.models import Post, Comment, Like
 from users.models import User
@@ -30,20 +31,22 @@ class PostTestCase(APITestCase):
         """"포스트 생성"""
         image_test = [self.temporary_image(), self.temporary_image()]
         data = {
-            'caption': 'hi~~~~~~!!!!',
-            'img': image_test
+            # 'caption': 'hi~~~~~~!!!!',
+            'img': image_test,
+            # 'tags': '["dfdf","dfdf"]'
         }
 
         self.client.force_authenticate(user=self.user)
 
         response = self.client.post('/api/posts', data=data, format='multipart')
 
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         post_response = Munch(response.data)
         self.assertTrue(post_response.id)
         self.assertEqual(len(post_response._img), len(image_test))
-        self.assertEqual(post_response.caption, data['caption'])
+        # self.assertEqual(post_response.caption, data['caption'])
 
     def test_post_comment(self):
         """댓글 parent - children"""
@@ -72,17 +75,17 @@ class PostTestCase(APITestCase):
                 print('comment:', comment['id'])
                 for child in comment['children']:
                     print('  child:', child['id'])
-        self.fail()
+        # self.fail()
 
-        for post in response.data['results']:
-            print('len', len(post['comments']), len(self.comments))
-            for response_comment, comment in zip(post['comments'], self.comments):
-                print(response_comment['id'], comment.id)
-                # self.assertEqual(response_comment['contents'], comment.contents)
-                # for response_reply , reply in zip(response_comment, comment.children.all()):
-                #     print("ㅎㅎㅎ과연!",response_reply)
-                #     print("어딨냐 ",reply)
-                # self.assertEqual(response_reply, reply)
+        # for post in response.data['results']:
+        #     print('len', len(post['comments']), len(self.comments))
+        #     for response_comment, comment in zip(post['comments'], self.comments):
+        #         print(response_comment['id'], comment.id)
+        # self.assertEqual(response_comment['contents'], comment.contents)
+        # for response_reply , reply in zip(response_comment, comment.children.all()):
+        #     print("ㅎㅎㅎ과연!",response_reply)
+        #     print("어딨냐 ",reply)
+        # self.assertEqual(response_reply, reply)
 
     def test_post_list(self):
         """"포스트 리스트"""
@@ -106,15 +109,49 @@ class PostTestCase(APITestCase):
             if post_response['user_like_id']:  # like 없는 post 있을 수 잇다
                 self.assertEqual(post_response['user_like_id'], post.post_like.get(user=request_user).id)
 
+    def test_post_tag_list(self):
+        """태그 검색"""
+        self.post.tags.add("python", "java", "ruby", "noja")
+        post2 = baker.make('posts.Post')
+        post2.tags.add("java2", "java0", "node")
+
+        self.client.force_authenticate(user=self.user)
+        search = "no"
+        response = self.client.get(f'/api/tags?tag={search}')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+
+        for r in response.data['results']:
+            self.assertTrue(r['name'].startswith(search))
+
+    def test_move_tag_post(self):
+        """태그를 가진 포스트 리스트"""
+        self.client.force_authenticate(user=self.user)
+
+        self.post.tags.add("python", "java", "ruby", "noja")
+        post2 = baker.make('posts.Post')
+        post2.tags.add("java2", "java", "node")
+
+        tag_name = Tag.objects.get(name='java')
+
+        response = self.client.get(f'/api/tags/{tag_name}/posts')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # 태그네임을 포함하는 포스트 query_set
+        post_qs = Post.objects.filter(tags__name__icontains=tag_name).order_by('-id').distinct()
+
+        for r, post in zip(response.data['results'], post_qs):
+            self.assertEqual(r['id'], post.id)
+
+
     def test_post_update(self):
         """포스트 업데이트"""
-
         prev_caption = self.post.caption
 
         data = {
             'caption': 'hello world'
         }
-
         self.client.force_authenticate(user=self.user)
 
         response = self.client.patch(f'/api/posts/{self.post.id}', data=data)
@@ -268,7 +305,7 @@ class PostLikeTestCase(APITestCase):
     def test_user_like_get(self):
         self.user1 = baker.make('users.User')
         self.post1 = baker.make('posts.Post', user=self.user)
-        
+
         like_list = baker.make('posts.Like', post=self.post, user=self.user)
         like_lli = baker.make('posts.Like', post=self.post1, user=self.user)
         like_list_user = baker.make('posts.Like', post=self.post, user=self.user1)

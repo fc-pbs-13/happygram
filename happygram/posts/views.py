@@ -3,8 +3,11 @@ from rest_framework import mixins
 from rest_framework.generics import get_object_or_404
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from django.db.models import F
+from taggit.models import Tag
+from taggit_serializer.serializers import TaggitSerializer
+
 from posts.models import Post, Comment, Like
-from posts.serializers import PostSerializer, CommentSerializer, LikeSerializer, UserLikeListSerializer
+from posts.serializers import PostSerializer, CommentSerializer, LikeSerializer, UserLikeListSerializer, TagSerializer
 from users.models import User
 
 
@@ -23,6 +26,25 @@ class PostViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.UpdateM
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    def get_queryset(self):
+        if 'tag_pk' in self.kwargs:
+            return super().get_queryset().filter(tags__name__icontains=self.kwargs['tag_pk']).distinct()
+        return super().get_queryset()
+
+
+class TagViewSet(mixins.ListModelMixin, GenericViewSet):
+    """tag_search"""
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        # query_params -> 태그 검색
+        tag_search = self.request.query_params.get('tag', None)
+        if tag_search is not None:
+            queryset = queryset.filter(name__startswith=tag_search)
+        return queryset
 
 
 class CommentViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, GenericViewSet):
