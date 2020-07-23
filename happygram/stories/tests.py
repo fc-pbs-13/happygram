@@ -1,44 +1,34 @@
+from datetime import timedelta
+
 from dateutil.parser import parse
-import pytz
 from django.utils import timezone
 from model_bakery import baker
 from rest_framework import status
 from rest_framework.test import APITestCase
-from datetime import datetime, timedelta
+from core.temporaryimage import TempraryImageMixin
 from relations.models import Relation
 from stories.models import Story, StoryRead
 
 
-class StoryTestCase(APITestCase):
+class StoryTestCase(APITestCase, TempraryImageMixin):
     def setUp(self) -> None:
         self.users = baker.make('users.User', _quantity=3)
         self.stories = []
-        self.stories.append(baker.make('stories.Story', user=self.users[0]))
-        self.stories.append(baker.make('stories.Story', user=self.users[1]))
-        self.stories.append(baker.make('stories.Story', user=self.users[2]))
+
+        for user in self.users:
+            story = baker.make('stories.Story', user=user)
+            self.stories.append(story)
+
         self.story = self.stories[0]
         # self.relation = baker.make('relations.Relation', from_user=self.users[0], to_user=self.users[1],
         #                            related_type=Relation.RelationChoice.follow)
         self.relation = baker.make('relations.Relation', from_user=self.users[2], to_user=self.users[1],
-                                   related_type=Relation.RelationChoice.follow)
+                                   related_type=Relation.RelationChoice.FOLLOW)
         self.relation = baker.make('relations.Relation', from_user=self.users[0], to_user=self.users[2],
-                                   related_type=Relation.RelationChoice.follow)
+                                   related_type=Relation.RelationChoice.FOLLOW)
         self.relation = baker.make('relations.Relation', from_user=self.users[1], to_user=self.users[2],
-                                   related_type=Relation.RelationChoice.follow)
+                                   related_type=Relation.RelationChoice.FOLLOW)
         self.user = self.users[0]
-
-    def temporary_image(self):
-        """
-        임시 이미지 파일
-        """
-        import tempfile
-        from PIL import Image
-
-        image = Image.new('RGB', (10, 10))
-        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
-        image.save(tmp_file, 'jpeg')
-        tmp_file.seek(0)
-        return tmp_file
 
     def test_story_create(self):
         """ 스토리 생성"""
@@ -81,7 +71,7 @@ class StoryTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        self.assertFalse(Story.objects.filter(pk=self.story.id))
+        self.assertFalse(Story.objects.filter(pk=self.story.id).exists())
 
     def test_story_list(self):
         """following user, my story 만 리스트"""
@@ -90,8 +80,10 @@ class StoryTestCase(APITestCase):
         response = self.client.get('/api/stories')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        my_followings = Relation.objects.filter(from_user=self.user).values('to_user')
         for r in response.data['results']:
-            if r['user'] in Relation.objects.filter(from_user=self.user).values('to_user') or r['user'] == self.user:
+            if r['user'] in my_followings or r['user'] == self.user:
                 self.assertTrue(Story.objects.filter(user=r['user'], caption=r['caption']).exists())
 
     def test_story_time(self):
@@ -102,11 +94,10 @@ class StoryTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        time_standard = timezone.now() - timedelta(hours=24)
+        time_standard = timezone.now() - timedelta(days=1)
         for r in response.data['results']:
             date_time_obj = parse(r['created'])
             self.assertTrue(time_standard < date_time_obj)
-
 
     def test_story_read(self):
         """디테일로 조회한 스토리는 story_read model에 저장 -> id 반환"""
@@ -121,3 +112,15 @@ class StoryTestCase(APITestCase):
         for r in response.data['results']:
             if r['story_read_id']:
                 self.assertTrue(StoryRead.objects.filter(user=self.user, id=r['story_read_id']).exists())
+
+    def test_stroy_datail(self):
+        baker.make('stories.StoryRead', story=self.story, user=self.user)
+
+        self.client.force_authenticate(user=self.users[1])
+
+        response = self.client.get(f'/api/stories/{self.story.id}')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for r, s in zip(response.data['read_users'], StoryRead.objects.filter(story=self.story)):
+            self.assertEqual(r['user'], s.user.id)

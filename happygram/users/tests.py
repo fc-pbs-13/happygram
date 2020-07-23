@@ -126,22 +126,21 @@ class UserFollowTestCase(APITestCase):
         self.users = baker.make('users.User', _quantity=3)
         self.user_data = {'user': self.users[0]}
         Relation.objects.create(from_user=self.users[0], to_user=self.users[1],
-                                related_type=Relation.RelationChoice.follow)
+                                related_type=Relation.RelationChoice.FOLLOW)
         Relation.objects.create(from_user=self.users[0], to_user=self.users[2],
-                                related_type=Relation.RelationChoice.follow)
+                                related_type=Relation.RelationChoice.FOLLOW)
         Relation.objects.create(from_user=self.users[1], to_user=self.users[0],
-                                related_type=Relation.RelationChoice.follow)
+                                related_type=Relation.RelationChoice.FOLLOW)
 
     def test_follower_list(self):
         response = self.client.get(f"/api/users/{self.user_data['user'].id}/follow")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         for response_data in response.data['results']:
             r = Munch(response_data)
             # response 에 from_user와 profile - user가 Relation objects에 있어야 한다
             self.assertTrue(Relation.objects.filter(from_user=r.from_user, to_user=r.profile['user'],
-                                                    related_type=Relation.RelationChoice.follow))
+                                                    related_type=Relation.RelationChoice.FOLLOW))
 
     def test_following_list(self):
         response = self.client.get(f"/api/users/{self.user_data['user'].id}/following")
@@ -151,7 +150,7 @@ class UserFollowTestCase(APITestCase):
             r = Munch(response_data)
             # response 에  to_user와 profile-user가 Relation objects에 있어야 한다
             self.assertTrue(Relation.objects.filter(from_user=r.to_user, to_user=r.profile['user'],
-                                                    related_type=Relation.RelationChoice.follow))
+                                                    related_type=Relation.RelationChoice.FOLLOW))
 
 
 class UserBlockTestCase(APITestCase):
@@ -160,11 +159,11 @@ class UserBlockTestCase(APITestCase):
         self.user_data = {'user': self.users[0]}
 
         Relation.objects.create(from_user=self.users[0], to_user=self.users[1],
-                                related_type=Relation.RelationChoice.block)
+                                related_type=Relation.RelationChoice.BLOCK)
         Relation.objects.create(from_user=self.users[0], to_user=self.users[2],
-                                related_type=Relation.RelationChoice.block)
+                                related_type=Relation.RelationChoice.BLOCK)
         Relation.objects.create(from_user=self.users[2], to_user=self.users[0],
-                                related_type=Relation.RelationChoice.block)
+                                related_type=Relation.RelationChoice.BLOCK)
 
     def test_block_list(self):
         self.client.force_authenticate(user=self.users[0])
@@ -175,4 +174,4 @@ class UserBlockTestCase(APITestCase):
         for response_data in response.data['results']:
             r = Munch(response_data)
             self.assertTrue(Relation.objects.filter(from_user=r.from_user, to_user=r.profile['user'],
-                                                    related_type=Relation.RelationChoice.block))
+                                                    related_type=Relation.RelationChoice.BLOCK))

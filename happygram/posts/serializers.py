@@ -99,7 +99,7 @@ class LikeSerializer(serializers.ModelSerializer):
 
 
 class LikePostSerializer(serializers.ModelSerializer):
-    """like post 생성/ 삭"""
+    """like post 생성/ 삭제"""
     email = serializers.EmailField(source='user.email', read_only=True)
     _img = PhotoSerializer(many=True, read_only=True, source='img')
 

@@ -81,6 +81,8 @@ class FollowingSerializer(serializers.ModelSerializer):
         fields = ('id', 'to_user', 'profile')
 
 
+
+
 class BlockSerializer(serializers.ModelSerializer):
     # 해당 유저의 블록 리스트
     profile = ProfileSerializer(source='to_user.profile', read_only=True)
