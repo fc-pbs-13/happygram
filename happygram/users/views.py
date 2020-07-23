@@ -29,11 +29,11 @@ class UserViewSet(ModelViewSet):
 
     def get_queryset(self):
         if self.action == 'follow':
-            return Relation.objects.filter(from_user=self.kwargs['pk'], related_type=Relation.RelationChoice.follow)
+            return Relation.objects.filter(from_user=self.kwargs['pk'], related_type=Relation.RelationChoice.FOLLOW).select_related('to_user__profile')
         elif self.action == 'following':
-            return Relation.objects.filter(to_user=self.kwargs['pk'], related_type=Relation.RelationChoice.follow)
+            return Relation.objects.filter(to_user=self.kwargs['pk'], related_type=Relation.RelationChoice.FOLLOW).select_related('from_user__profile')
         elif self.action == 'block':
-            return Relation.objects.filter(from_user=self.request.user, related_type=Relation.RelationChoice.block)
+            return Relation.objects.filter(from_user=self.request.user, related_type=Relation.RelationChoice.BLOCK).select_related('to_user__profile')
         else:
             return super().get_queryset()
 

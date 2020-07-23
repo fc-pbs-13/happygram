@@ -3,8 +3,8 @@ from django.db import models
 
 class Relation(models.Model):
     class RelationChoice(models.TextChoices):
-        follow = 'follow'
-        block = 'block'
+        FOLLOW = 'FOLLOW'
+        BLOCK = 'BLOCK'
 
     from_user = models.ForeignKey(
         'users.User',
