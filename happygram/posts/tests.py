@@ -154,8 +154,8 @@ class CommentTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # print(response.data['results'])
-        for r in response.data['results']:
-            print(r)
+        # for r in response.data['results']:
+            # todo 테코 작성~
 
     def test_comment_create(self):
         """댓글 생성"""
@@ -193,8 +193,8 @@ class CommentTestCase(APITestCase):
 
     def test_comment_destroy(self):
         self.client.force_authenticate(user=self.user)
-
         response = self.client.delete(f'/api/comments/{self.comment.id}')
+
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Comment.objects.filter(pk=self.comment.id).exists())
 

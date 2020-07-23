@@ -26,6 +26,8 @@ class UserRelationTestCase(APITestCase):
     def test_relations_destroy(self):
         self.relation = Relation.objects.create(from_user=self.users[0], to_user=self.users[1], related_type=Relation.RelationChoice.FOLLOW)
 
+        self.client.force_authenticate(user=self.users[0])
+
         response = self.client.delete(f'/api/relations/{self.relation.id}')
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -38,6 +40,8 @@ class UserRelationTestCase(APITestCase):
             'related_type': Relation.RelationChoice.BLOCK,
             'to_user': relation.to_user.id
         }
+        self.client.force_authenticate(user=self.users[0])
+
         response = self.client.patch(f'/api/relations/{relation.id}', data=update_data)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

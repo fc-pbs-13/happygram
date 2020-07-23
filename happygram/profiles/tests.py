@@ -44,10 +44,11 @@ class ProfileTestCase(APITestCase):
             'introduce': 'hi python',
             'image': self.temporary_image()
         }
+        self.client.force_authenticate(user=self.user)
+
         response = self.client.patch(f'/api/profiles/{self.profile.id}', data=data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.client.force_authenticate(user=self.user)
 
         profile_response = Munch(response.data)
         self.assertEqual(profile_response.introduce, data['introduce'])

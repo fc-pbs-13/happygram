@@ -6,6 +6,7 @@ from django.db.models import F
 from taggit.models import Tag
 from taggit_serializer.serializers import TaggitSerializer
 
+from core.pemissions import IsOwner
 from posts.models import Post, Comment, Like
 from posts.serializers import PostSerializer, CommentSerializer, LikeSerializer, UserLikeListSerializer, TagSerializer
 from users.models import User
@@ -16,6 +17,7 @@ class PostViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.UpdateM
     """post viewset"""
     queryset = Post.objects.all()
     serializer_class = PostSerializer
+    permission_classes = [IsOwner]
 
     def paginate_queryset(self, queryset):
         # 모든 포스트
@@ -37,6 +39,8 @@ class TagViewSet(mixins.ListModelMixin, GenericViewSet):
     """tag_search"""
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = [IsOwner]
+
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -51,12 +55,16 @@ class CommentViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, GenericV
     """comment viewset"""
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = [IsOwner]
+
 
 
 class CommentNestedViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, GenericViewSet):
     """post - comment list & create viewset"""
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = [IsOwner]
+
 
     def get_queryset(self):
         queryset = super().get_queryset().filter(post=self.kwargs.get('post_pk'))
@@ -86,6 +94,10 @@ class LikeViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Destroy
     """like viewset"""
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
+    permission_classes = [IsOwner]
+
+    def get_object(self):
+        return super().get_object()
 
     def get_queryset(self):
         if self.action == 'list':

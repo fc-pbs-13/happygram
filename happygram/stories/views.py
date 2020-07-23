@@ -1,6 +1,8 @@
 from django.utils import timezone
 from rest_framework.viewsets import ModelViewSet
 from datetime import datetime, timedelta
+
+from core.pemissions import IsOwner
 from relations.models import Relation
 from stories.models import Story, StoryRead
 from stories.serializers import StoryListSerializer, StoryDetailSerializer
@@ -11,6 +13,8 @@ from django.db.models import Q
 class StoryViewSet(ModelViewSet):
     queryset = Story.objects.all()
     serializer_class = StoryListSerializer
+    permission_classes = [IsOwner]
+
 
     def get_queryset(self):
         if self.action == 'list':

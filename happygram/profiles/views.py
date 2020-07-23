@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework import mixins
 from rest_framework.viewsets import GenericViewSet
 
+from core.pemissions import IsOwner
 from profiles.models import Profile
 from profiles.serializers import ProfileSerializer
 
@@ -12,3 +13,5 @@ class ProfileViewSet(mixins.RetrieveModelMixin,
 
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
+    permission_classes = [IsOwner]
+
