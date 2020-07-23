@@ -55,7 +55,6 @@ class PostSerializer(TaggitSerializer, serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
     _img = PhotoSerializer(many=True, read_only=True, source='img')
     img = serializers.ListField(child=serializers.ImageField(), write_only=True)
-    comments = CommentSerializer(many=True, read_only=True)
     user_like_id = serializers.SerializerMethodField()
     tags = TagListSerializerField(required=False)
 
@@ -63,7 +62,7 @@ class PostSerializer(TaggitSerializer, serializers.ModelSerializer):
         model = Post
         fields = (
             'id', 'email', 'img', '_img', 'caption', 'created',
-            'modified', 'comments', 'like_count', 'user_like_id', 'tags'
+            'modified', 'like_count', 'user_like_id', 'tags'
         )
         extra_kwargs = {'caption': {'required': False}}
 

@@ -49,45 +49,6 @@ class PostTestCase(APITestCase):
         self.assertEqual(len(post_response._img), len(image_test))
         # self.assertEqual(post_response.caption, data['caption'])
 
-    def test_post_comment(self):
-        """댓글 parent - children"""
-        # self.comments = baker.make('posts.Comment', _quantity=2, post=self.post, user=self.user, level=0)
-        comment_a = Comment.objects.create(user=self.user, post=self.post)
-        comment_b = Comment.objects.create(user=self.user, post=self.post)
-        # self.reply = Comment.objects.create(user=self.user, parent=comment_a)
-        # self.reply1 = Comment.objects.create(user=self.user, parent=comment_b)
-        # Comment.objects.create(user=self.user, parent=comment_a)
-        # Comment.objects.create(user=self.user, parent=comment_b)
-
-        self.client.force_authenticate(user=self.user)
-
-        response = self.client.get('/api/posts')
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        for comment in self.post.comments.all():
-            print('comment:', comment.id, comment.tree_id, comment.lft)
-            for child in comment.children.all():
-                print('  child:', child.id, child.tree_id, child.lft)
-
-        # print(response.content)
-        for post in response.data['results']:
-            for comment in post['comments']:
-                print('comment:', comment['id'])
-                for child in comment['children']:
-                    print('  child:', child['id'])
-        # self.fail()
-
-        # for post in response.data['results']:
-        #     print('len', len(post['comments']), len(self.comments))
-        #     for response_comment, comment in zip(post['comments'], self.comments):
-        #         print(response_comment['id'], comment.id)
-        # self.assertEqual(response_comment['contents'], comment.contents)
-        # for response_reply , reply in zip(response_comment, comment.children.all()):
-        #     print("ㅎㅎㅎ과연!",response_reply)
-        #     print("어딨냐 ",reply)
-        # self.assertEqual(response_reply, reply)
-
     def test_post_list(self):
         """"포스트 리스트"""
         self.posts += baker.make('posts.Post', _quantity=2, user=self.user)
@@ -176,7 +137,25 @@ class CommentTestCase(APITestCase):
     def setUp(self) -> None:
         self.user = baker.make('users.User')
         self.post = baker.make('posts.Post', user=self.user)
-        self.comment = baker.make('posts.Comment', post=self.post, user=self.user, level=0)  # level = 0 -> 댓글
+        self.comments = baker.make('posts.Comment', _quantity=2, post=self.post, user=self.user,
+                                   level=0)  # level = 0 -> 댓글
+        self.comment = self.comments[0]
+
+    def test_comment_list(self):
+        self.reply = Comment.objects.create(user=self.user, parent=self.comments[0])
+        self.reply1 = Comment.objects.create(user=self.user, parent=self.comments[1])
+        self.reply1 = Comment.objects.create(user=self.user, parent=self.comments[1])
+        self.post1 = baker.make('posts.Post', user=self.user)
+        test = Comment.objects.create(user=self.user, post=self.post1)
+
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(f'/api/posts/{self.post.id}/comments')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # print(response.data['results'])
+        for r in response.data['results']:
+            print(r)
 
     def test_comment_create(self):
         """댓글 생성"""
@@ -226,6 +205,7 @@ class CommentTestCase(APITestCase):
 
         self.client.force_authenticate(user=self.user)
         response = self.client.post(f'/api/comments/{self.comment.id}/reply', data=data)
+
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         post_response = Munch(response.data)
@@ -326,6 +306,6 @@ class PostLikeTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         print(response.data)
-        for r in response.data['results'] :
+        for r in response.data['results']:
             # like objects에 response post.pk , user 조건을 만족하는지
             self.assertTrue(Like.objects.filter(post=r['post']['id'], user=self.user).exists())

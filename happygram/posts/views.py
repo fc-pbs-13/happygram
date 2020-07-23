@@ -47,10 +47,20 @@ class TagViewSet(mixins.ListModelMixin, GenericViewSet):
         return queryset
 
 
-class CommentViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, GenericViewSet):
+class CommentViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, GenericViewSet):
     """comment viewset"""
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+
+
+class CommentNestedViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, GenericViewSet):
+    """post - comment list & create viewset"""
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset().filter(post=self.kwargs.get('post_pk'))
+        return queryset
 
     def perform_create(self, serializer):
         if 'post_pk' in self.kwargs:
