@@ -74,6 +74,8 @@ class UserTestCase(APITestCase):
         """
         Request : POST - /api/user/login
         """
+        self.client.force_authenticate(user=self.test_user)
+
         response = self.client.post('/api/users/login', data=self.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -133,6 +135,8 @@ class UserFollowTestCase(APITestCase):
                                 related_type=Relation.RelationChoice.FOLLOW)
 
     def test_follower_list(self):
+        self.client.force_authenticate(user=self.users[0])
+
         response = self.client.get(f"/api/users/{self.user_data['user'].id}/follow")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -143,6 +147,8 @@ class UserFollowTestCase(APITestCase):
                                                     related_type=Relation.RelationChoice.FOLLOW))
 
     def test_following_list(self):
+        self.client.force_authenticate(user=self.users[0])
+
         response = self.client.get(f"/api/users/{self.user_data['user'].id}/following")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

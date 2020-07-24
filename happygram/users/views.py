@@ -4,9 +4,11 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import action
 from rest_framework.fields import EmailField
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
+from core.pemissions import UserIsOwner
 from relations.models import Relation
 from users.models import User
 from users.serializers import UserSerializer, CustomAuthTokenSerializer, UpdatePasswordSerializer, FollowerSerializer, \
@@ -16,6 +18,7 @@ from users.serializers import UserSerializer, CustomAuthTokenSerializer, UpdateP
 class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [UserIsOwner]
 
     def get_serializer_class(self):
         if self.action == 'follow':
@@ -27,13 +30,24 @@ class UserViewSet(ModelViewSet):
         else:
             return super().get_serializer_class()
 
+    def get_permissions(self):
+        if self.action in ['login', 'create']:
+            return [AllowAny()]
+        return super().get_permissions()
+
     def get_queryset(self):
         if self.action == 'follow':
-            return Relation.objects.filter(from_user=self.kwargs['pk'], related_type=Relation.RelationChoice.FOLLOW).select_related('to_user__profile')
+            return Relation.objects.filter(from_user=self.kwargs['pk'],
+                                           related_type=Relation.RelationChoice.FOLLOW).select_related(
+                'to_user__profile')
         elif self.action == 'following':
-            return Relation.objects.filter(to_user=self.kwargs['pk'], related_type=Relation.RelationChoice.FOLLOW).select_related('from_user__profile')
+            return Relation.objects.filter(to_user=self.kwargs['pk'],
+                                           related_type=Relation.RelationChoice.FOLLOW).select_related(
+                'from_user__profile')
         elif self.action == 'block':
-            return Relation.objects.filter(from_user=self.request.user, related_type=Relation.RelationChoice.BLOCK).select_related('to_user__profile')
+            return Relation.objects.filter(from_user=self.request.user,
+                                           related_type=Relation.RelationChoice.BLOCK).select_related(
+                'to_user__profile')
         else:
             return super().get_queryset()
 
