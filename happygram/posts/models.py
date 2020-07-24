@@ -12,6 +12,9 @@ class Post(TimeStampedModel):
     like_count = models.PositiveIntegerField(default=0)
     tags = TaggableManager()
 
+    def __str__(self):
+        return f'{self.id}'
+
 
 def post_img_path(instance, filename):
     return f'post_img/{instance.post.user_id}/{filename}'
