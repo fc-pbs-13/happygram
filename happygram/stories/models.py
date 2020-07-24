@@ -1,9 +1,13 @@
 from django.db import models
 
 
+def story_img_path(instance, filename):
+    return f'story_img/{instance.user_id}/{filename}'
+
+
 class Story(models.Model):
     user = models.ForeignKey('users.User', on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='story_image', null=True, blank=True)
+    image = models.ImageField(upload_to=story_img_path, null=True, blank=True)
     caption = models.CharField(max_length=255)
     created = models.DateTimeField(auto_now_add=True)
 

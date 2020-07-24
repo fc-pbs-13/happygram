@@ -13,9 +13,13 @@ class Post(TimeStampedModel):
     tags = TaggableManager()
 
 
+def post_img_path(instance, filename):
+    return f'post_img/{instance.post.user_id}/{filename}'
+
+
 class Photo(models.Model):
     post = models.ForeignKey('posts.Post', related_name='img', on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='post_image', null=True, blank=True)
+    image = models.ImageField(upload_to=post_img_path, null=True, blank=True)
 
 
 class Comment(MPTTModel):

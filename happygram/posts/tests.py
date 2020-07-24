@@ -40,11 +40,9 @@ class PostTestCase(APITestCase):
 
         response = self.client.post('/api/posts', data=data, format='multipart')
 
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         post_response = Munch(response.data)
-        print('caption:', Post.objects.get(id=post_response.id).caption)
         self.assertTrue(post_response.id)
         self.assertEqual(len(post_response._img), len(image_test))
         # self.assertEqual(post_response.caption, data['caption'])
@@ -305,7 +303,6 @@ class PostLikeTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        print(response.data)
         for r in response.data['results']:
             # like objects에 response post.pk , user 조건을 만족하는지
             self.assertTrue(Like.objects.filter(post=r['post']['id'], user=self.user).exists())
