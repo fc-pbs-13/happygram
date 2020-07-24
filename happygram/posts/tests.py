@@ -150,10 +150,10 @@ class CommentTestCase(APITestCase):
 
         response = self.client.get(f'/api/posts/{self.post.id}/comments')
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # print(response.data['results'])
-        # for r in response.data['results']:
-            # todo 테코 작성~
+        for r, c in zip(response.data['results'], self.comments[::-1]):
+            self.assertEqual(r['id'], c.id)
+            for reply_res, reply_obj in zip(r['children'], c.children.all()):
+                self.assertEqual(reply_res['id'], reply_obj.id)
 
     def test_comment_create(self):
         """댓글 생성"""

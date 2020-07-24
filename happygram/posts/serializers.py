@@ -67,6 +67,7 @@ class PostSerializer(TaggitSerializer, serializers.ModelSerializer):
         extra_kwargs = {'caption': {'required': False}}
 
     def create(self, validated_data):
+        """포스트 저장할 때 이미지도 같이 저장 """
         images = validated_data.pop('img')  # post 모델 안에 img 없음
         post = Post.objects.create(**validated_data)
         photo_list = []
