@@ -32,11 +32,6 @@ class StoryViewSet(ModelViewSet):
                 Q(user__in=sub_query, ) | Q(user=self.request.user))
             return queryset
         return super().get_queryset()
-    #
-    # def get_serializer_class(self):
-    #     if self.action == 'retrieve':
-    #         return StoryDetailSerializer
-    #     return super().get_serializer_class()
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
