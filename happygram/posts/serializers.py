@@ -64,10 +64,11 @@ class PostSerializer(TaggitSerializer, serializers.ModelSerializer):
             'id', 'email', 'img', '_img', 'caption', 'created',
             'modified', 'like_count', 'user_like_id', 'tags'
         )
-        extra_kwargs = {'caption': {'required': False}}
+        # extra_kwargs = {'caption': {'required': False}}
 
     def create(self, validated_data):
         """포스트 저장할 때 이미지도 같이 저장 """
+        print(validated_data)
         images = validated_data.pop('img')  # post 모델 안에 img 없음
         post = Post.objects.create(**validated_data)
         photo_list = []
@@ -79,7 +80,8 @@ class PostSerializer(TaggitSerializer, serializers.ModelSerializer):
 
     def get_user_like_id(self, obj):
         """ request user가 like한 포스트들은 like_id가 보인다   """
-        if self.context['view'].action == 'list':
+        if self.context['view'].action == 'list' and 'tag_pk' not in self.context['view'].kwargs:
+            # list이면서 & tags/{tag_name}/post가 아닌 경우
             like_id = self.context['view'].like_dic.get(obj.id)
             return like_id
         return None

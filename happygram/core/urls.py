@@ -1,9 +1,9 @@
 from django.conf.urls import url
 from rest_framework.routers import SimpleRouter
-from posts.views import PostViewSet, CommentViewSet, LikeViewSet, TagViewSet, CommentNestedViewSet
+from posts.views import PostViewSet, CommentViewSet, LikeViewSet, TagViewSet, CommentNestedViewSet, TaggedPostViewSet
 from profiles.views import ProfileViewSet
 from relations.views import RelationViewSet
-from stories.views import StoryViewSet
+from stories.views import StoryViewSet, StoryReadViewSet
 from users.views import UserViewSet
 from rest_framework_nested import routers
 
@@ -27,11 +27,12 @@ comment_router.register(r'likes', LikeViewSet, basename='post_like')
 reply_router = routers.NestedSimpleRouter(router, r'comments', lookup='comment')
 reply_router.register(r'reply', CommentNestedViewSet, basename='comment_reply')
 
-# post-like-create
-# like_router = routers.NestedSimpleRouter(router, r'posts', lookup='post')
+# story-read-list
+story_read_router = routers.NestedSimpleRouter(router, r'stories', lookup='story')
+story_read_router.register(r'read', StoryReadViewSet, basename='story_read')
 
 # tag name -post-list
 tag_router = routers.NestedSimpleRouter(router, r'tags', lookup='tag')
-tag_router.register(r'posts', PostViewSet, basename='tag_post')
+tag_router.register(r'posts', TaggedPostViewSet, basename='tag_post')
 
-urlpatterns = router.urls + comment_router.urls + reply_router.urls + tag_router.urls
+urlpatterns = router.urls + comment_router.urls + reply_router.urls + tag_router.urls + story_read_router.urls

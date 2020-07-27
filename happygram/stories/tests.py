@@ -3,6 +3,7 @@ from datetime import timedelta
 from dateutil.parser import parse
 from django.utils import timezone
 from model_bakery import baker
+from munch import Munch
 from rest_framework import status
 from rest_framework.test import APITestCase
 from core.temporaryimage import TempraryImageMixin
@@ -39,7 +40,7 @@ class StoryTestCase(APITestCase, TempraryImageMixin):
 
         self.client.force_authenticate(user=self.user)
 
-        response = self.client.post('/api/stories', data=data)
+        response = self.client.post('/api/stories', data=data, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -82,8 +83,11 @@ class StoryTestCase(APITestCase, TempraryImageMixin):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         my_followings = Relation.objects.filter(from_user=self.user).values('to_user')
+
         for r in response.data['results']:
-            if r['user'] in my_followings or r['user'] == self.user:
+            if r['user'] in my_followings:
+                self.assertTrue(Story.objects.filter(user=r['user'], caption=r['caption']).exists())
+            elif r['user'] == self.user:
                 self.assertTrue(Story.objects.filter(user=r['user'], caption=r['caption']).exists())
 
     def test_story_time(self):
@@ -101,20 +105,21 @@ class StoryTestCase(APITestCase, TempraryImageMixin):
 
     def test_story_read(self):
         """디테일로 조회한 스토리는 story_read model에 저장 -> id 반환"""
-        self.client.force_authenticate(user=self.user)
-
-        baker.make('stories.StoryRead', user=self.user, story=self.story)
-
-        response = self.client.get('/api/stories')
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        for r in response.data['results']:
-            if r['story_read_id']:
-                self.assertTrue(StoryRead.objects.filter(user=self.user, id=r['story_read_id']).exists())
+        # self.client.force_authenticate(user=self.user)
+        #
+        # baker.make('stories.StoryRead', user=self.user, story=self.story)
+        #
+        # response = self.client.get('/api/stories')
+        #
+        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        #
+        # for r in response.data['results']:
+        #     if r['story_read_id']:
+        #         self.assertTrue(StoryRead.objects.filter(user=self.user, id=r['story_read_id']).exists())
 
     def test_stroy_datail(self):
         baker.make('stories.StoryRead', story=self.story, user=self.user)
+        # baker.make('stories.StoryRead', story=self.story, user=self.users[1])
 
         self.client.force_authenticate(user=self.users[1])
 
@@ -122,5 +127,23 @@ class StoryTestCase(APITestCase, TempraryImageMixin):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        for r, s in zip(response.data['read_users'], StoryRead.objects.filter(story=self.story)):
-            self.assertEqual(r['user'], s.user.id)
+        response_story = Munch(response.data)
+        self.assertEqual(response_story.id, self.story.id)
+        self.assertEqual(response_story.user, self.story.user.id)
+        self.assertEqual(response_story.caption, self.story.caption)
+
+    def test_story_read_list(self):
+        baker.make('stories.StoryRead', story=self.story, user=self.user)
+
+        self.client.force_authenticate(user=self.users[1])
+        self.client.get(f'/api/stories/{self.story.id}')
+
+        response = self.client.get(f'/api/stories/{self.story.id}/read')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        storyread = StoryRead.objects.filter(story_id=self.story.id).order_by('-id')
+
+        self.assertEqual(len(response.data['results']), len(storyread))
+        for response_data, response_obj in zip(response.data['results'], storyread):
+            self.assertEqual(response_data['read_users']['user'], response_obj.user.id)
