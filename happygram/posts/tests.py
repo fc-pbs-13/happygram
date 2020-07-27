@@ -4,28 +4,17 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from taggit.models import Tag
 
+from core.temporaryimage import TempraryImageMixin
 from posts.models import Post, Comment, Like
 from users.models import User
 
 
-class PostTestCase(APITestCase):
+class PostTestCase(APITestCase, TempraryImageMixin):
     def setUp(self) -> None:
         self.user = baker.make('users.User')
         self.posts = []
         self.post = baker.make('posts.Post', user=self.user)
         self.posts.append(self.post)
-
-    def temporary_image(self):
-        """
-        임시 이미지 파일
-        """
-        import tempfile
-        from PIL import Image
-        image = Image.new('RGB', (1, 1))
-        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
-        image.save(tmp_file, 'jpeg')
-        tmp_file.seek(0)
-        return tmp_file
 
     def test_post_create(self):
         """"포스트 생성"""
@@ -39,10 +28,12 @@ class PostTestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
 
         response = self.client.post('/api/posts', data=data, format='multipart')
+        print(response.data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         post_response = Munch(response.data)
+        # print(response.data)
         self.assertTrue(post_response.id)
         self.assertEqual(len(post_response._img), len(image_test))
         # self.assertEqual(post_response.caption, data['caption'])
@@ -69,7 +60,7 @@ class PostTestCase(APITestCase):
             if post_response['user_like_id']:  # like 없는 post 있을 수 잇다
                 self.assertEqual(post_response['user_like_id'], post.post_like.get(user=request_user).id)
 
-    def test_post_tag_list(self):
+    def test_tag_list(self):
         """태그 검색"""
         self.post.tags.add("python", "java", "ruby", "noja")
         post2 = baker.make('posts.Post')
@@ -78,30 +69,46 @@ class PostTestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
         search = "no"
         response = self.client.get(f'/api/tags?tag={search}')
-
+        # comment
+        # todo 태그 생성 test
         self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
 
+        searchable_tags = ['noja', 'node']  # search 결과 태그 리스트
         for r in response.data['results']:
-            self.assertTrue(r['name'].startswith(search))
+            self.assertTrue(r['name'] in searchable_tags)
+
+    def test_tag_list_no_search(self):
+        """/api/tags -> method not allowed"""
+        self.post.tags.add("python", "java", "ruby", "noja")
+
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get('/api/tags')
+
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_move_tag_post(self):
         """태그를 가진 포스트 리스트"""
         self.client.force_authenticate(user=self.user)
 
-        self.post.tags.add("python", "java", "ruby", "noja")
-        post2 = baker.make('posts.Post')
-        post2.tags.add("java2", "java", "node")
+        self.post.tags.add("python", "ruby", "noja")
+        posts = baker.make('posts.Post', _quantity=2)
+        posts[0].tags.add("java2", "java", "node")
+        posts[1].tags.add("javaq", "hi")
 
-        tag_name = Tag.objects.get(name='java')
+        tag_name = "java" # 없는 태그 검색시 404
 
         response = self.client.get(f'/api/tags/{tag_name}/posts')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # 태그네임을 포함하는 포스트 query_set
-        post_qs = Post.objects.filter(tags__name__icontains=tag_name).order_by('-id').distinct()
+        # post_qs = Post.objects.filter(tags__name__icontains=tag_name).order_by('-id').distinct()
+        # static하게!
+        post_qs = posts
         self.assertEqual(len(response.data['results']), len(post_qs))
-        for r, post in zip(response.data['results'], post_qs):
+
+        for r, post in zip(response.data['results'], post_qs[::-1]):
             self.assertEqual(r['id'], post.id)
 
     def test_post_update(self):

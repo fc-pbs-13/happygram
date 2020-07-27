@@ -20,7 +20,7 @@ class IsOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in ['delete', 'patch']:
             return obj.user == request.user
-        return bool(request.user and request.user.is_authenticated)
+        return request.user and request.user.is_authenticated
 
 
 class UserIsOwner(permissions.BasePermission):
@@ -35,4 +35,4 @@ class UserIsOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in ['delete', 'patch']:
             return obj.user == request.user
-        return bool(request.user and request.user.is_authenticated)
+        return request.user and request.user.is_authenticated
