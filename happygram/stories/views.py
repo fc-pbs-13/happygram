@@ -47,7 +47,7 @@ class StoryViewSet(ModelViewSet):
         # 모든 스토리
         page = super().paginate_queryset(queryset)
         # 내가 읽은 스토리 list
-        self.story_read = {story_read.story.id: story_read.id for story_read in
+        self.story_read = {story_read.story_id: story_read.id for story_read in
                            StoryRead.objects.filter(user=self.request.user, story__in=page)}
         return page
 
