@@ -30,6 +30,10 @@ class PostViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.UpdateM
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    def get_queryset(self):
+        queryset = Post.objects.prefetch_related('user').prefetch_related('img').prefetch_related('tags')
+        return queryset
+
 
 class TaggedPostViewSet(mixins.ListModelMixin, GenericViewSet):
     """
@@ -78,7 +82,8 @@ class CommentNestedViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, Gener
     permission_classes = [IsOwner]
 
     def get_queryset(self):
-        queryset = super().get_queryset().filter(post=self.kwargs.get('post_pk'))
+        # Comment.objects.prefetch_related('parent__')
+        queryset = super().get_queryset().filter(post=self.kwargs.get('post_pk')).prefetch_related('children__children')
         return queryset
 
     def perform_create(self, serializer):
@@ -88,7 +93,8 @@ class CommentNestedViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, Gener
 
             serializer.save(
                 user=self.request.user,
-                post=post
+                post=post,
+                parent=None
             )
 
         elif 'comment_pk' in self.kwargs:
@@ -107,10 +113,10 @@ class LikeViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Destroy
     serializer_class = LikeSerializer
     permission_classes = [IsOwner]
 
-
     def get_queryset(self):
         if self.action == 'list':
-            return super().get_queryset().filter(user=self.request.user).select_related('post')
+            return super().get_queryset().filter(user=self.request.user).select_related('post__user').prefetch_related(
+                'post__img')
         return super().get_queryset()
 
     def get_serializer_class(self):

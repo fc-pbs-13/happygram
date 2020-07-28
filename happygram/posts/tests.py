@@ -20,7 +20,7 @@ class PostTestCase(APITestCase, TempraryImageMixin):
         """"포스트 생성"""
         image_test = [self.temporary_image(), self.temporary_image()]
         data = {
-            # 'caption': 'hi~~~~~~!!!!',
+            # 'caption': 'hi~~~~~~!!!!'
             'img': image_test,
             # 'tags': '["dfdf","dfdf"]'
         }
@@ -28,7 +28,6 @@ class PostTestCase(APITestCase, TempraryImageMixin):
         self.client.force_authenticate(user=self.user)
 
         response = self.client.post('/api/posts', data=data, format='multipart')
-        print(response.data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 

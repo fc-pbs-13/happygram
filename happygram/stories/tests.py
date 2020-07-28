@@ -103,20 +103,6 @@ class StoryTestCase(APITestCase, TempraryImageMixin):
             date_time_obj = parse(r['created'])
             self.assertTrue(time_standard < date_time_obj)
 
-    def test_story_read(self):
-        """디테일로 조회한 스토리는 story_read model에 저장 -> id 반환"""
-        # self.client.force_authenticate(user=self.user)
-        #
-        # baker.make('stories.StoryRead', user=self.user, story=self.story)
-        #
-        # response = self.client.get('/api/stories')
-        #
-        # self.assertEqual(response.status_code, status.HTTP_200_OK)
-        #
-        # for r in response.data['results']:
-        #     if r['story_read_id']:
-        #         self.assertTrue(StoryRead.objects.filter(user=self.user, id=r['story_read_id']).exists())
-
     def test_stroy_datail(self):
         baker.make('stories.StoryRead', story=self.story, user=self.user)
         # baker.make('stories.StoryRead', story=self.story, user=self.users[1])
@@ -126,7 +112,6 @@ class StoryTestCase(APITestCase, TempraryImageMixin):
         response = self.client.get(f'/api/stories/{self.story.id}')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         response_story = Munch(response.data)
         self.assertEqual(response_story.id, self.story.id)
         self.assertEqual(response_story.user, self.story.user.id)
