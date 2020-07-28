@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from taggit.models import Tag
-
 from taggit_serializer.serializers import (TagListSerializerField,
                                            TaggitSerializer)
 from posts.models import Post, Photo, Comment, Like
@@ -64,11 +63,9 @@ class PostSerializer(TaggitSerializer, serializers.ModelSerializer):
             'id', 'email', 'img', '_img', 'caption', 'created',
             'modified', 'like_count', 'user_like_id', 'tags'
         )
-        # extra_kwargs = {'caption': {'required': False}}
 
     def create(self, validated_data):
         """포스트 저장할 때 이미지도 같이 저장 """
-        print(validated_data)
         images = validated_data.pop('img')  # post 모델 안에 img 없음
         post = Post.objects.create(**validated_data)
         photo_list = []
@@ -88,6 +85,8 @@ class PostSerializer(TaggitSerializer, serializers.ModelSerializer):
 
 
 class LikeSerializer(serializers.ModelSerializer):
+    """like create / delete """
+
     class Meta:
         model = Like
         fields = ('id', 'post_id', 'user_id',)
@@ -101,7 +100,7 @@ class LikeSerializer(serializers.ModelSerializer):
 
 
 class LikePostSerializer(serializers.ModelSerializer):
-    """like post 생성/ 삭제"""
+    """like한 포스트 간단한 정보만 보여줌 작성자, 이미지"""
     email = serializers.EmailField(source='user.email', read_only=True)
     _img = PhotoSerializer(many=True, read_only=True, source='img')
 
