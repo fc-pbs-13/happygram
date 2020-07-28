@@ -48,7 +48,8 @@ class TaggedPostViewSet(mixins.ListModelMixin, GenericViewSet):
         # tags/{tag_name}/post -> safe
         if 'tag_pk' in self.kwargs:
             get_object_or_404(Tag, name=self.kwargs.get('tag_pk'))
-            return super().get_queryset().filter(tags__name__icontains=self.kwargs['tag_pk']).distinct()
+            return super().get_queryset().filter(
+                tags__name__icontains=self.kwargs['tag_pk']).distinct().prefetch_related('user', 'img', 'tags')
 
 
 class TagViewSet(mixins.ListModelMixin, GenericViewSet):
