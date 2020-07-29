@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from django.shortcuts import render
 from rest_framework import status, serializers
 from rest_framework.authtoken.models import Token
@@ -13,6 +15,11 @@ from relations.models import Relation
 from users.models import User
 from users.serializers import UserSerializer, CustomAuthTokenSerializer, UpdatePasswordSerializer, FollowerSerializer, \
     FollowingSerializer, BlockSerializer
+
+from time import sleep
+from django.core.cache import cache
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 
 class UserViewSet(ModelViewSet):
@@ -49,6 +56,8 @@ class UserViewSet(ModelViewSet):
                                            related_type=Relation.RelationChoice.BLOCK).select_related(
                 'to_user__profile')
         else:
+            print(super().get_queryset().explain())
+
             return super().get_queryset()
 
     @action(methods=['post'], detail=False)
@@ -58,12 +67,27 @@ class UserViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         token, created = Token.objects.get_or_create(user=user)
-        return Response({'token': token.key}, status=status.HTTP_201_CREATED)
+
+        key = 'token_key'
+        val = cache.get(key)
+
+        if not val:
+            # 캐시에 토큰 값 저장
+            sleep(3)
+            timezone.now()
+            val = token.key
+            cache.set(key, val, 60)
+
+        return Response({'token': val}, status=status.HTTP_201_CREATED)
 
     @action(methods=['delete'], detail=False)
     def logout(self, request, *args, **kwargs):
         request.user.auth_token.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        key = 'token_key'
+        cache.delete(key)
+        val = cache.get(key)
+
+        return Response({'cache': val}, status=status.HTTP_204_NO_CONTENT)
 
     @action(methods=['patch'], detail=False)
     def update_password(self, request, *args, **kwargs):
