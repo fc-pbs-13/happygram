@@ -96,7 +96,7 @@ DATABASES = {
         'USER': os.environ['DB_USER'],
         'PASSWORD': os.environ['DB_PASSWORD'],
         'PORT': os.environ['DB_PORT'],
-        'ATOMIC_REQUESTS': True,
+        # 'ATOMIC_REQUESTS': True,
     }
 }
 
@@ -144,7 +144,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, '../../images')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        # 'rest_framework.authentication.TokenAuthentication',
+        'core.authentications.CustomTokenAuthentication',
         'rest_framework.authentication.SessionAuthentication'],
     'DEFAULT_PAGINATION_CLASS': 'core.pagination.Pagination',
     'PAGE_SIZE': 5,

@@ -56,8 +56,6 @@ class UserViewSet(ModelViewSet):
                                            related_type=Relation.RelationChoice.BLOCK).select_related(
                 'to_user__profile')
         else:
-            print(super().get_queryset().explain())
-
             return super().get_queryset()
 
     @action(methods=['post'], detail=False)
@@ -68,17 +66,15 @@ class UserViewSet(ModelViewSet):
         user = serializer.validated_data['user']
         token, created = Token.objects.get_or_create(user=user)
 
-        key = 'token_key'
+        # 유저 로그인하면 캐시 ttl 설정
+        key = user.id
         val = cache.get(key)
 
-        if not val:
-            # 캐시에 토큰 값 저장
+        if val is None:
             sleep(3)
-            timezone.now()
-            val = token.key
-            cache.set(key, val, 60)
-
-        return Response({'token': val}, status=status.HTTP_201_CREATED)
+            val = ""
+            cache.set(key, val, 10)
+        return Response({'token': token.key}, status=status.HTTP_201_CREATED)
 
     @action(methods=['delete'], detail=False)
     def logout(self, request, *args, **kwargs):

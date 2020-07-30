@@ -50,6 +50,11 @@ class StoryViewSet(ModelViewSet):
         # request user와 현재 story pk 를 저장
         StoryRead.objects.create(user=self.request.user, story_id=kwargs['pk'])
 
+        # key = f"story{kwargs['pk']}"
+        # val = cache.get_or_set(key, self.get_object(), 20)
+        # serializer = self.get_serializer(val)
+
+        # getorset(db 반드시 )으로 하거나 이렇게감(db 안감) 할 수 있음
         key = f"story{kwargs['pk']}"
         val = cache.get(key)
 

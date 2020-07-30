@@ -22,9 +22,8 @@ class Story(models.Model):
         super().save(force_insert, force_update, using, update_fields)
 
     def delete(self, using=None, keep_parents=False):
-        if self.id:
-            key = f"story{self.id}"
-            cache.delete(key)
+        key = f"story{self.id}"
+        cache.delete(key)
         return super().delete(using, keep_parents)
 
 
