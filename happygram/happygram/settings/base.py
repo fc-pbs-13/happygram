@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'taggit',
     'taggit_serializer',
     'debug_toolbar',
+    'cacheops',
 
 ]
 
@@ -172,9 +173,31 @@ DEBUG_TOOLBAR_PANELS = [
     'debug_toolbar.panels.profiling.ProfilingPanel',
 ]
 
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+#         'LOCATION': 'unique-snowflake',
+#     }
+# }
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
     }
+}
+
+# CACHEOPS_REDIS = "redis://localhost:6379/1"
+CACHEOPS_DEFAULTS = {
+    'timeout': 60
+}
+CACHEOPS = {
+    'posts.Post': {'ops': 'all'},
+    'posts.Photo': {'ops': 'all'},
+    'posts.Like': {'ops': 'all'},
+    'users.User': {'ops': 'all'},
+    'taggit.Tag': {'ops': 'all'},
+    'profiles.Profile': {'ops': 'get'}
 }

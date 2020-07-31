@@ -58,12 +58,15 @@ class StoryViewSet(ModelViewSet):
         key = f"story{kwargs['pk']}"
         val = cache.get(key)
 
-        if not val:
-            sleep(3)
-            val = self.get_object()
-            cache.set(key, val, 20)
-        serializer = self.get_serializer(val)
+        # if not val:
+        #     sleep(3)
+        #     val = self.get_object()
+        #     cache.set(key, val, 20)
+        # serializer = self.get_serializer(val)
 
+        # cache ops 사용
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
     def paginate_queryset(self, queryset):
