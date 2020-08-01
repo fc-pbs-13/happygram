@@ -37,11 +37,12 @@ story_read_router.register(r'read', StoryReadViewSet, basename='story_read')
 tag_router = routers.NestedSimpleRouter(router, r'tags', lookup='tag')
 tag_router.register(r'posts', TaggedPostViewSet, basename='tag_post')
 
+
 urlpatterns = router.urls + comment_router.urls + reply_router.urls + tag_router.urls + story_read_router.urls
 
 if settings.DEBUG:
     import debug_toolbar
-    urlpatterns = [
-        path('__debug__/', include(debug_toolbar.urls)),
-    ] + urlpatterns
 
+    urlpatterns = [
+                      path('__debug__/', include(debug_toolbar.urls)),
+                  ] + urlpatterns

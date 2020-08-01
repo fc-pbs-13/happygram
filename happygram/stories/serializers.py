@@ -5,6 +5,17 @@ from stories.models import Story, StoryRead
 
 
 class StoryListSerializer(serializers.ModelSerializer):
+    """스토리 리스트 불러옴"""
+    profile = ProfileSerializer(source='user.profile')
+
+    class Meta:
+        model = Story
+        fields = ('profile',)
+
+
+class StorySerializer(serializers.ModelSerializer):
+    """스토리 생성 삭제 수정"""
+
     class Meta:
         model = Story
         fields = ('id', 'user', 'image', 'created', 'caption')
@@ -18,4 +29,3 @@ class StoryDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = StoryRead
         fields = ('id', 'user', 'story_id', 'read_users',)
-

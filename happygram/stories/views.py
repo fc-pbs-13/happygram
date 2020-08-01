@@ -1,19 +1,25 @@
+from time import sleep
+
 from django.utils import timezone
 from rest_framework import mixins
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from datetime import datetime, timedelta
 
 from core.pemissions import IsOwner
+from profiles.models import Profile
+from profiles.serializers import ProfileSerializer
 from relations.models import Relation
 from stories.models import Story, StoryRead
-from stories.serializers import StoryListSerializer, StoryDetailSerializer
+from stories.serializers import StoryListSerializer, StoryDetailSerializer, StorySerializer
 from users.models import User
 from django.db.models import Q
+from django.core.cache import cache
 
 
 class StoryViewSet(ModelViewSet):
     queryset = Story.objects.all()
-    serializer_class = StoryListSerializer
+    serializer_class = StorySerializer
     permission_classes = [IsOwner]
 
     def get_queryset(self):
@@ -29,7 +35,11 @@ class StoryViewSet(ModelViewSet):
 
             # filter : 24시간 이내 스토리 , 내가 작성 or my_following 작성
             queryset = Story.objects.filter(created__gt=time_standard).filter(
-                Q(user__in=sub_query, ) | Q(user=self.request.user))
+                Q(user__in=sub_query, ) | Q(user=self.request.user)).select_related('user__profile')
+
+            # if Story.objects.filter(created__gt=time_standard).filter(Q(user__in=sub_query, ) | Q(user=self.request.user)).exists():
+            # return Profile.objects.filter(user__story__in=queryset)
+
             return queryset
         return super().get_queryset()
 
@@ -39,9 +49,25 @@ class StoryViewSet(ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         # request user와 현재 story pk 를 저장
         StoryRead.objects.create(user=self.request.user, story_id=kwargs['pk'])
-        response = super().retrieve(request, *args, **kwargs)
 
-        return response
+        # key = f"story{kwargs['pk']}"
+        # val = cache.get_or_set(key, self.get_object(), 20)
+        # serializer = self.get_serializer(val)
+
+        # getorset(db 반드시 )으로 하거나 이렇게감(db 안감) 할 수 있음
+        key = f"story{kwargs['pk']}"
+        val = cache.get(key)
+
+        # if not val:
+        #     sleep(3)
+        #     val = self.get_object()
+        #     cache.set(key, val, 20)
+        # serializer = self.get_serializer(val)
+
+        # cache ops 사용
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def paginate_queryset(self, queryset):
         # 모든 스토리
@@ -50,6 +76,11 @@ class StoryViewSet(ModelViewSet):
         self.story_read = {story_read.story_id: story_read.id for story_read in
                            StoryRead.objects.filter(user=self.request.user, story__in=page)}
         return page
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return ProfileSerializer
+        return super().get_serializer_class()
 
 
 class StoryReadViewSet(mixins.ListModelMixin, GenericViewSet):

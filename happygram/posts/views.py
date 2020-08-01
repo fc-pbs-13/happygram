@@ -31,7 +31,8 @@ class PostViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.UpdateM
         serializer.save(user=self.request.user)
 
     def get_queryset(self):
-        queryset = Post.objects.prefetch_related('user').prefetch_related('img').prefetch_related('tags')
+        queryset = Post.objects.select_related('user').prefetch_related('img', 'tags')
+
         return queryset
 
 
