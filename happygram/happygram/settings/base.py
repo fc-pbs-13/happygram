@@ -194,10 +194,11 @@ CACHEOPS_DEFAULTS = {
     'timeout': 60
 }
 CACHEOPS = {
-    'posts.Post': {'ops': 'all'},
+    'posts.Post': {'ops': 'get'},
     'posts.Photo': {'ops': 'all'},
     'posts.Like': {'ops': 'all'},
     'users.User': {'ops': 'all'},
     'taggit.Tag': {'ops': 'all'},
     'profiles.Profile': {'ops': 'get'}
 }
+
