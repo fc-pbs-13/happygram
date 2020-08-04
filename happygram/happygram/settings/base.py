@@ -201,4 +201,3 @@ CACHEOPS = {
     'taggit.Tag': {'ops': 'all'},
     'profiles.Profile': {'ops': 'get'}
 }
-

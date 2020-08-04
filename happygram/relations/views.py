@@ -15,4 +15,5 @@ class RelationViewSet(ModelViewSet):
     permission_classes = [RelationIsOwner]
 
     def perform_create(self, serializer):
+
         serializer.save(from_user=self.request.user)

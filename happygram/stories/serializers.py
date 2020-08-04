@@ -4,13 +4,13 @@ from profiles.serializers import ProfileSerializer
 from stories.models import Story, StoryRead
 
 
-class StoryListSerializer(serializers.ModelSerializer):
-    """스토리 리스트 불러옴"""
-    profile = ProfileSerializer(source='user.profile')
-
-    class Meta:
-        model = Story
-        fields = ('profile',)
+# class StoryListSerializer(serializers.ModelSerializer):
+#     """스토리 리스트 불러옴"""
+#     profile = ProfileSerializer(source='user.profile')
+#
+#     class Meta:
+#         model = Story
+#         fields = ('profile', 'created')
 
 
 class StorySerializer(serializers.ModelSerializer):
