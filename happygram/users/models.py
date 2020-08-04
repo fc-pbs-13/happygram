@@ -52,9 +52,9 @@ class User(AbstractUser):
     REQUIRED_FIELDS = []
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        user_is = Profile.objects.filter(user_id=self.id).exists()
-        if not user_is:
+        if not self.id:
+            user = super().save(*args, **kwargs)
             Profile.objects.create(user_id=self.id)
+        super().save(*args, **kwargs)
 
 

@@ -2,6 +2,8 @@ from model_bakery import baker
 from munch import Munch
 from rest_framework import status
 from rest_framework.test import APITestCase
+
+from profiles.models import Profile
 from relations.models import Relation
 
 
@@ -24,7 +26,8 @@ class UserRelationTestCase(APITestCase):
         self.assertEqual(follow_response.from_user, self.users[0].id)
 
     def test_relations_destroy(self):
-        self.relation = Relation.objects.create(from_user=self.users[0], to_user=self.users[1], related_type=Relation.RelationChoice.FOLLOW)
+        self.relation = Relation.objects.create(from_user=self.users[0], to_user=self.users[1],
+                                                related_type=Relation.RelationChoice.FOLLOW)
 
         self.client.force_authenticate(user=self.users[0])
 
@@ -35,7 +38,8 @@ class UserRelationTestCase(APITestCase):
         self.assertFalse(Relation.objects.filter(pk=self.relation.id).exists())
 
     def test_relations_update(self):
-        relation = Relation.objects.create(from_user=self.users[0], to_user=self.users[1], related_type=Relation.RelationChoice.FOLLOW)
+        relation = Relation.objects.create(from_user=self.users[0], to_user=self.users[1],
+                                           related_type=Relation.RelationChoice.FOLLOW)
         update_data = {
             'related_type': Relation.RelationChoice.BLOCK,
             'to_user': relation.to_user.id
@@ -50,10 +54,34 @@ class UserRelationTestCase(APITestCase):
         self.assertEqual(follow_response.related_type, update_data['related_type'])
 
     def test_relations_duplicate(self):
-        Relation.objects.create(from_user=self.users[0], to_user=self.users[1], related_type=Relation.RelationChoice.BLOCK)
+        Relation.objects.create(from_user=self.users[0], to_user=self.users[1],
+                                related_type=Relation.RelationChoice.BLOCK)
 
         self.client.force_authenticate(user=self.users[0])
 
         response = self.client.post('/api/relations', data=self.data)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
+
+    def test_following_count_increase(self):
+        self.client.force_authenticate(user=self.users[0])
+
+        self.client.post('/api/relations', data=self.data)
+
+        qs = Profile.objects.all()
+        self.assertEqual(qs.get(user=self.users[0]).following, 1)
+        self.assertEqual(qs.get(user=self.users[1]).follower, 1)
+
+    def test_following_count_decrease(self):
+        self.client.force_authenticate(user=self.users[0])
+        relation = baker.make('relations.Relation', from_user=self.users[0], to_user=self.users[1],
+                   related_type=Relation.RelationChoice.FOLLOW)
+        self.users[0].profile.following = 10
+        self.users[0].profile.save()
+
+        self.client.delete(f'/api/relations/{relation.id}')
+
+        qs = Profile.objects.all()
+        self.assertEqual(qs.get(user=self.users[0]).following, 9)
+
+

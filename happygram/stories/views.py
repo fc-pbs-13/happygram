@@ -11,7 +11,7 @@ from profiles.models import Profile
 from profiles.serializers import ProfileSerializer
 from relations.models import Relation
 from stories.models import Story, StoryRead
-from stories.serializers import StoryListSerializer, StoryDetailSerializer, StorySerializer
+from stories.serializers import StoryDetailSerializer, StorySerializer
 from users.models import User
 from django.db.models import Q
 from django.core.cache import cache
@@ -77,10 +77,10 @@ class StoryViewSet(ModelViewSet):
                            StoryRead.objects.filter(user=self.request.user, story__in=page)}
         return page
 
-    def get_serializer_class(self):
-        if self.action == "list":
-            return ProfileSerializer
-        return super().get_serializer_class()
+    # def get_serializer_class(self):
+    #     if self.action == "list":
+    #         return ProfileSerializer
+    #     return super().get_serializer_class()
 
 
 class StoryReadViewSet(mixins.ListModelMixin, GenericViewSet):

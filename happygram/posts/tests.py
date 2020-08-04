@@ -50,7 +50,6 @@ class PostTestCase(APITestCase, TempraryImageMixin):
         request_user = self.user  # request_user를 user or user2로 테스트
         self.client.force_authenticate(user=request_user)
         response = self.client.get('/api/posts')
-        self.fail()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
