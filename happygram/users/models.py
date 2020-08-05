@@ -53,8 +53,9 @@ class User(AbstractUser):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            user = super().save(*args, **kwargs)
+            super().save(*args, **kwargs)
             Profile.objects.create(user_id=self.id)
-        super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
 
 

@@ -6,13 +6,11 @@ from rest_framework.test import APITestCase
 from profiles.models import Profile
 from model_bakery import baker
 from relations.models import Relation
+
 users = baker.make('users.User', _quantity=2)
 Relation.objects.create(from_user=users[0], to_user=users[1], related_type='FOLLOW')
 
-from model_bakery import baker
-users = baker.make('users.User', _quantity=2)
-from relations.models import Relation
-Relation.objects.create(from_user=users[1], to_user=users[0], related_type='FOLLOW')
+
 class UserRelationTestCase(APITestCase):
     def setUp(self) -> None:
         self.users = baker.make('users.User', _quantity=2)
@@ -81,7 +79,7 @@ class UserRelationTestCase(APITestCase):
     def test_following_count_decrease(self):
         self.client.force_authenticate(user=self.users[0])
         relation = baker.make('relations.Relation', from_user=self.users[0], to_user=self.users[1],
-                   related_type=Relation.RelationChoice.FOLLOW)
+                              related_type=Relation.RelationChoice.FOLLOW)
         self.users[0].profile.following = 10
         self.users[0].profile.save()
 
@@ -105,5 +103,3 @@ class TestRedlock(APITestCase):
         lock = self.redlock.lock("pants", 10)
         print(lock)
         self.redlock.unlock(lock)
-
-

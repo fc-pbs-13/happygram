@@ -15,9 +15,9 @@ class CustomTokenAuthentication(TokenAuthentication):
         if not token.user.is_active:
             raise exceptions.AuthenticationFailed(_('User inactive or deleted.'))
 
-        key = token.user_id
-        val = cache.get(key)
-        if val is None:
-            token.delete()
-            raise exceptions.AuthenticationFailed(_('캐시 삭제됨 다시 로그인하세요'))
+        # key = token.user_id
+        # val = cache.get(key)
+        # if val is None:
+        #     token.delete()
+        #     raise exceptions.AuthenticationFailed(_('캐시 삭제됨 다시 로그인하세요'))
         return token.user, token
