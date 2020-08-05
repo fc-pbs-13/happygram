@@ -27,6 +27,8 @@ class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [UserIsOwner]
 
+    authentication_classes = [] #todo locust testc용
+
     def get_serializer_class(self):
         if self.action == 'follow':
             return FollowerSerializer
@@ -38,7 +40,7 @@ class UserViewSet(ModelViewSet):
             return super().get_serializer_class()
 
     def get_permissions(self):
-        if self.action in ['login', 'create']:
+        if self.action in ['login', 'create', 'locust_test']:
             return [AllowAny()]
         return super().get_permissions()
 
@@ -109,3 +111,7 @@ class UserViewSet(ModelViewSet):
     def block(self, request, *args, **kwargs):
         # 해당 유저의 팔로우 리스트
         return super().list(request, *args, **kwargs)
+
+    @action(detail=False)
+    def locust_test(self, request, *args, **kwargs):
+        return Response()

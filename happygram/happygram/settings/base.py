@@ -28,7 +28,7 @@ SECRET_KEY = 'vj4(n!o@asdh_=rlfcbg_s%4t%u4aqp7w5c$_2vvctnxca+gg7'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -200,4 +200,53 @@ CACHEOPS = {
     'users.User': {'ops': 'all'},
     'taggit.Tag': {'ops': 'all'},
     'profiles.Profile': {'ops': 'get'}
+}
+
+import os
+import logging
+from logdna import LogDNAHandler  # required to register `logging.handlers.LogDNAHandler`
+
+LOGGING = {
+    'version': 1,
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'formatters': {
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'logdna': {
+            'level': logging.DEBUG,
+            'class': 'logging.handlers.LogDNAHandler',
+            'key': 'd1efdbf0a0f73d0e2f5d91439dbcfe39',
+            'options': {
+                'app': '<app name>',
+                'env': os.environ.get('ENVIRONMENT'),
+                'index_meta': False,
+            },
+        },
+        'console': {
+            'level': 'INFO',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+
+    },
+    'loggers': {
+        'django.server': {
+            'handlers': ['logdna', 'console', 'file'],
+            'level': logging.INFO
+        },
+    },
 }
