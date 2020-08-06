@@ -207,6 +207,7 @@ import logging
 from logdna import LogDNAHandler  # required to register `logging.handlers.LogDNAHandler`
 
 LOGGING = {
+    'disable_existing_loggers': False,
     'version': 1,
     'filters': {
         'require_debug_true': {
@@ -230,6 +231,7 @@ LOGGING = {
                 'index_meta': False,
             },
         },
+
         'console': {
             'level': 'INFO',
             'filters': ['require_debug_true'],
@@ -237,7 +239,7 @@ LOGGING = {
             'formatter': 'simple'
         },
         'file': {
-            'level': 'DEBUG',
+            'level': 'INFO',
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
         },
@@ -246,7 +248,16 @@ LOGGING = {
     'loggers': {
         'django.server': {
             'handlers': ['logdna', 'console', 'file'],
-            'level': logging.INFO
+            'level': logging.INFO,
         },
+        'users': {
+            'handlers': ['logdna', 'console', 'file'],
+            'level': logging.DEBUG,
+        },
+        'gunicorn.access': {
+            'level': 'DEBUG',
+            'handlers': ['console', 'file', 'logdna'],
+            'propagate': False
+        }
     },
 }

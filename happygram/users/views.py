@@ -20,6 +20,9 @@ from time import sleep
 from django.core.cache import cache
 from rest_framework.decorators import action
 from rest_framework.response import Response
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class UserViewSet(ModelViewSet):
@@ -27,7 +30,7 @@ class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [UserIsOwner]
 
-    authentication_classes = [] #todo locust testc용
+    authentication_classes = []  # todo locust test용
 
     def get_serializer_class(self):
         if self.action == 'follow':
@@ -114,4 +117,7 @@ class UserViewSet(ModelViewSet):
 
     @action(detail=False)
     def locust_test(self, request, *args, **kwargs):
+        logger.info('locust_test')
+        logger.error('error!!')
+        logger.debug('debug!')
         return Response()
